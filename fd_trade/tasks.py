@@ -18,16 +18,17 @@ def check_intraday_conditions():
 
         # Calculate current weekly realized P&L
         monday = get_monday_of_current_week()
-        weekly_trades = frappe.db.get_list(
-            "Trade Journal",
-            filters={
-                "date": [">=", monday],
-                "status": "Closed"
-            },
-            fields=["SUM(result_rp) as total_pnl"]
+        weekly_result = frappe.db.sql(
+            """
+            SELECT SUM(result_rp) as total_pnl
+            FROM `tabTrade Journal`
+            WHERE date >= %s AND status = 'Closed'
+            """,
+            (monday,),
+            as_dict=True
         )
 
-        weekly_pnl = weekly_trades[0].total_pnl if weekly_trades and weekly_trades[0].total_pnl else 0
+        weekly_pnl = weekly_result[0].total_pnl if weekly_result and weekly_result[0].total_pnl else 0
         weekly_loss_limit = settings.modal_total * (settings.weekly_loss_limit_percent / 100)
 
         if weekly_pnl <= -weekly_loss_limit:
@@ -38,13 +39,16 @@ def check_intraday_conditions():
             send_telegram_notification(message)
 
         # Check total open exposure
-        total_exposure = frappe.db.get_list(
-            "Trade Journal",
-            filters={"status": "Open"},
-            fields=["SUM(entry_price * position_lot * 100) as total_value"]
+        exposure_result = frappe.db.sql(
+            """
+            SELECT SUM(entry_price * position_lot * 100) as total_value
+            FROM `tabTrade Journal`
+            WHERE status = 'Open'
+            """,
+            as_dict=True
         )
 
-        current_exposure = total_exposure[0].total_value if total_exposure and total_exposure[0].total_value else 0
+        current_exposure = exposure_result[0].total_value if exposure_result and exposure_result[0].total_value else 0
         max_exposure = settings.modal_total * (settings.max_exposure_percent / 100)
 
         if current_exposure > max_exposure:
@@ -161,19 +165,17 @@ def monthly_circuit_breaker_check():
     try:
         first_day = getdate(today()).replace(day=1)
 
-        monthly_trades = frappe.db.get_list(
-            "Trade Journal",
-            filters={
-                "date": [">=", first_day],
-                "status": "Closed"
-            },
-            fields=["SUM(result_rp) as total_pnl"]
+        monthly_result = frappe.db.sql(
+            """
+            SELECT SUM(result_rp) as total_pnl
+            FROM `tabTrade Journal`
+            WHERE date >= %s AND status = 'Closed'
+            """,
+            (first_day,),
+            as_dict=True
         )
 
-        if not monthly_trades:
-            return
-
-        total_pnl = monthly_trades[0].total_pnl if monthly_trades[0].total_pnl else 0
+        total_pnl = monthly_result[0].total_pnl if monthly_result and monthly_result[0].total_pnl else 0
 
         settings = frappe.get_single("Trading Account Settings")
         circuit_breaker_limit = settings.modal_total * (settings.monthly_circuit_breaker_percent / 100)
@@ -206,7 +208,6 @@ def check_price_alerts():
     Berjalan setiap 15 menit selama jam bursa (9-16, Senin-Jumat).
     """
     from fd_trade.utils.price_data import get_current_price
-    from fd_trade.utils.telegram import send_telegram_notification
 
     try:
         active_alerts = frappe.get_all(
@@ -219,7 +220,6 @@ def check_price_alerts():
             current_price = get_current_price(alert.ticker)
 
             if current_price is None:
-                # Gagal ambil harga (network/ticker salah), skip, jangan crash job.
                 continue
 
             triggered = False

@@ -104,23 +104,24 @@ class TradeJournal(Document):
         today = frappe.utils.today()
         daily_loss_limit = settings.modal_total * (settings.daily_loss_limit_percent / 100)
 
-        todays_losses = frappe.db.get_list(
-            "Trade Journal",
-            filters={
-                "date": today,
-                "status": "Closed",
-                "result_rp": ["<", 0]
-            },
-            fields=["SUM(result_rp) as total_loss"]
+        result = frappe.db.sql(
+            """
+            SELECT SUM(result_rp) as total_loss
+            FROM `tabTrade Journal`
+            WHERE date = %s AND status = 'Closed' AND result_rp < 0
+            """,
+            (today,),
+            as_dict=True
         )
 
-        if todays_losses and todays_losses[0].total_loss:
-            if todays_losses[0].total_loss <= -daily_loss_limit:
-                frappe.throw(
-                    _("Daily loss limit breached. Total loss today: {0}. Stop trading per your rules.").format(
-                        frappe.format_value(todays_losses[0].total_loss, {"fieldtype": "Currency"})
-                    )
+        total_loss = result[0].total_loss if result and result[0].total_loss else 0
+
+        if total_loss and total_loss <= -daily_loss_limit:
+            frappe.throw(
+                _("Daily loss limit breached. Total loss today: {0}. Stop trading per your rules.").format(
+                    frappe.format_value(total_loss, {"fieldtype": "Currency"})
                 )
+            )
 
     def check_consecutive_losses(self, settings):
         """Block new trade if max consecutive losses reached."""
@@ -145,16 +146,17 @@ class TradeJournal(Document):
         """Block new trade if per-stock exposure limit is exceeded."""
         max_per_stock = settings.modal_total * (settings.max_per_stock_percent / 100)
 
-        current_exposure = frappe.db.get_list(
-            "Trade Journal",
-            filters={
-                "ticker": self.ticker,
-                "status": "Open"
-            },
-            fields=["SUM(entry_price * position_lot * 100) as total_value"]
+        result = frappe.db.sql(
+            """
+            SELECT SUM(entry_price * position_lot * 100) as total_value
+            FROM `tabTrade Journal`
+            WHERE ticker = %s AND status = 'Open'
+            """,
+            (self.ticker,),
+            as_dict=True
         )
 
-        current_value = current_exposure[0].total_value if current_exposure and current_exposure[0].total_value else 0
+        current_value = result[0].total_value if result and result[0].total_value else 0
         new_position_value = self.entry_price * self.position_lot * 100 if self.position_lot else 0
         total_after_new = current_value + new_position_value
 
@@ -171,13 +173,16 @@ class TradeJournal(Document):
         """Block new trade if total portfolio exposure limit is exceeded."""
         max_exposure = settings.modal_total * (settings.max_exposure_percent / 100)
 
-        total_exposure = frappe.db.get_list(
-            "Trade Journal",
-            filters={"status": "Open"},
-            fields=["SUM(entry_price * position_lot * 100) as total_value"]
+        result = frappe.db.sql(
+            """
+            SELECT SUM(entry_price * position_lot * 100) as total_value
+            FROM `tabTrade Journal`
+            WHERE status = 'Open'
+            """,
+            as_dict=True
         )
 
-        current_total = total_exposure[0].total_value if total_exposure and total_exposure[0].total_value else 0
+        current_total = result[0].total_value if result and result[0].total_value else 0
         new_position_value = self.entry_price * self.position_lot * 100 if self.position_lot else 0
         total_after_new = current_total + new_position_value
 
