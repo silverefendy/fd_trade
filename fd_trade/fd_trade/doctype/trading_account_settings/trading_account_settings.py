@@ -8,7 +8,6 @@ from frappe.model.document import Document
 
 
 class TradingAccountSettings(Document):
-"""Single DocType for storing trading account configuration."""
+    """Single DocType for storing trading account configuration."""
 
-pass
-
+    pass

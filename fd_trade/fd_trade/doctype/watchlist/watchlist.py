@@ -9,8 +9,8 @@ from frappe.utils import now
 
 
 class Watchlist(Document):
-"""Watchlist entry for tracking potential trading opportunities."""
+    """Watchlist entry for tracking potential trading opportunities."""
 
-def before_save(self):
-"""Update last_updated timestamp before saving."""
-self.last_updated = now()
+    def before_save(self):
+        """Update last_updated timestamp before saving."""
+        self.last_updated = now()

@@ -8,6 +8,6 @@ from frappe.model.document import Document
 
 
 class BrokerSummaryDetail(Document):
-"""Individual broker transaction detail entry."""
+    """Individual broker transaction detail entry."""
 
-pass
+    pass

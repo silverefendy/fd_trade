@@ -8,6 +8,6 @@ from frappe.model.document import Document
 
 
 class SignalSource(Document):
-"""Signal Source entry for tracking informal trading tips."""
+    """Signal Source entry for tracking informal trading tips."""
 
-pass
+    pass
