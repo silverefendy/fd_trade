@@ -1,0 +1,1 @@
+﻿recursive-include fd_trade *.json *.md *.txt *.html *.css *.js *.py
