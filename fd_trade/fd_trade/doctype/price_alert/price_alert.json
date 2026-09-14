@@ -1,0 +1,122 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 0,
+ "creation": "2026-09-14 16:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "linked_trade",
+  "ticker",
+  "alert_type",
+  "column_break_1",
+  "trigger_price",
+  "condition",
+  "status",
+  "section_break_1",
+  "notes",
+  "triggered_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "linked_trade",
+   "fieldtype": "Link",
+   "label": "Trade Journal",
+   "options": "Trade Journal",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "ticker",
+   "fieldtype": "Data",
+   "label": "Ticker",
+   "fetch_from": "linked_trade.ticker",
+   "fetch_if_empty": 1,
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "alert_type",
+   "fieldtype": "Select",
+   "label": "Alert Type",
+   "options": "Take Profit\nStop Loss\nBuy Trigger\nCustom",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "trigger_price",
+   "fieldtype": "Currency",
+   "label": "Trigger Price",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "condition",
+   "fieldtype": "Select",
+   "label": "Condition",
+   "options": ">=\n<=",
+   "reqd": 1,
+   "description": ">= artinya alert aktif saat harga NAIK mencapai/melewati trigger. <= artinya saat harga TURUN mencapai/melewati trigger."
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nTriggered\nCancelled",
+   "default": "Active",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break",
+   "label": "Detail"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "triggered_at",
+   "fieldtype": "Datetime",
+   "label": "Triggered At",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-14 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "FD-Trade",
+ "name": "Price Alert",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "All",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

@@ -14,7 +14,9 @@
   "entry_section",
   "entry_price",
   "stop_loss",
+  "target_category",
   "target_price",
+  "target_suggestions",
   "position_lot",
   "suggested_lot",
   "risk_amount",
@@ -84,9 +86,25 @@
    "reqd": 1
   },
   {
+   "fieldname": "target_category",
+   "fieldtype": "Select",
+   "label": "Target Category",
+   "options": "Conservative (1.5R)\nModerate (2.5R)\nAggressive (4R)\nCustom",
+   "default": "Moderate (2.5R)",
+   "description": "Pilih kategori target profit berbasis R-multiple. Pilih 'Custom' untuk isi Target Price manual."
+  },
+  {
    "fieldname": "target_price",
    "fieldtype": "Currency",
-   "label": "Target Price"
+   "label": "Target Price",
+   "description": "Otomatis terisi berdasarkan Target Category, kecuali dipilih 'Custom'."
+  },
+  {
+   "fieldname": "target_suggestions",
+   "fieldtype": "Small Text",
+   "label": "Target Suggestions (Auto)",
+   "read_only": 1,
+   "description": "Perhitungan otomatis 3 skenario target berdasarkan jarak Entry Price ke Stop Loss."
   },
   {
    "fieldname": "position_lot",
@@ -199,7 +217,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-14 14:59:00.000000",
+ "modified": "2026-09-14 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "FD-Trade",
  "name": "Trade Journal",

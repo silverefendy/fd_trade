@@ -196,3 +196,53 @@ def get_monday_of_current_week():
     day_of_week = today_date.weekday()  # Monday is 0, Sunday is 6
     monday = add_to_date(today_date, days=-day_of_week)
     return monday
+
+
+def check_price_alerts():
+    """Cek semua Price Alert dengan status Active, bandingkan dengan harga
+    current (via yfinance, delay 15-20 menit), kirim notifikasi Telegram
+    jika kondisi trigger terpenuhi.
+
+    Berjalan setiap 15 menit selama jam bursa (9-16, Senin-Jumat).
+    """
+    from fd_trade.utils.price_data import get_current_price
+    from fd_trade.utils.telegram import send_telegram_notification
+
+    try:
+        active_alerts = frappe.get_all(
+            "Price Alert",
+            filters={"status": "Active"},
+            fields=["name", "ticker", "alert_type", "trigger_price", "condition", "linked_trade"]
+        )
+
+        for alert in active_alerts:
+            current_price = get_current_price(alert.ticker)
+
+            if current_price is None:
+                # Gagal ambil harga (network/ticker salah), skip, jangan crash job.
+                continue
+
+            triggered = False
+            if alert.condition == ">=" and current_price >= alert.trigger_price:
+                triggered = True
+            elif alert.condition == "<=" and current_price <= alert.trigger_price:
+                triggered = True
+
+            if triggered:
+                message = (
+                    f"\U0001F514 PRICE ALERT: {alert.ticker}\n"
+                    f"Type: {alert.alert_type}\n"
+                    f"Trigger: Rp{alert.trigger_price:,.0f} | Current: Rp{current_price:,.0f}\n"
+                    f"Linked Trade: {alert.linked_trade}\n"
+                    f"(Catatan: harga yfinance delay 15-20 menit, konfirmasi manual sebelum eksekusi)"
+                )
+                send_telegram_notification(message)
+
+                frappe.db.set_value("Price Alert", alert.name, {
+                    "status": "Triggered",
+                    "triggered_at": frappe.utils.now()
+                })
+                frappe.db.commit()
+
+    except Exception as e:
+        frappe.log_error(f"check_price_alerts failed: {e}", "FD-Trade Scheduled Tasks")

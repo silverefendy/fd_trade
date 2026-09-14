@@ -1,11 +1,21 @@
 """
 Trade Journal Controller
-Core logging doctype for trading entries with risk management validation.
+Core logging doctype for trading entries with risk management validation
+dan perhitungan target price otomatis berbasis R-multiple.
 """
 
 import frappe
 from frappe.model.document import Document
 from frappe import _
+
+# Kategori target price berbasis R-multiple.
+# R = jarak Entry Price ke Stop Loss.
+# Angka ini adalah kerangka matematis, BUKAN jaminan/prediksi pergerakan harga.
+TARGET_CATEGORIES = {
+    "Conservative (1.5R)": 1.5,
+    "Moderate (2.5R)": 2.5,
+    "Aggressive (4R)": 4.0,
+}
 
 
 class TradeJournal(Document):
@@ -19,7 +29,8 @@ class TradeJournal(Document):
             self.check_risk_management_rules()
 
     def calculate_risk_metrics(self):
-        """Calculate risk amount, suggested lot, and validate stop loss."""
+        """Calculate risk amount, suggested lot, target price suggestions,
+        dan validasi stop loss."""
         settings = frappe.get_single("Trading Account Settings")
 
         # Calculate risk per share
@@ -47,9 +58,37 @@ class TradeJournal(Document):
                     )
                 )
 
+        # ---- Target Price otomatis berbasis R-multiple ----
+        self.calculate_target_price(risk_per_share)
+
         # Calculate result_rp if exit_price is set
         if self.exit_price and self.position_lot:
             self.result_rp = (self.exit_price - self.entry_price) * self.position_lot * 100
+
+    def calculate_target_price(self, risk_per_share):
+        """Hitung 3 skenario target profit (Conservative/Moderate/Aggressive)
+        berdasarkan R-multiple, tampilkan sebagai suggestion, dan set
+        target_price otomatis kecuali kategori 'Custom' dipilih."""
+
+        suggestion_lines = []
+        computed = {}
+
+        for label, multiple in TARGET_CATEGORIES.items():
+            price = self.entry_price + (risk_per_share * multiple)
+            computed[label] = price
+            suggestion_lines.append(f"{label}: Rp{price:,.0f}  (jika TP tercapai = +{multiple}R)")
+
+        self.target_suggestions = "\n".join(suggestion_lines)
+
+        # Kalau kategori bukan Custom, auto-isi target_price.
+        # Kalau Custom, biarkan nilai yang sudah diinput user (tidak ditimpa).
+        if self.target_category and self.target_category != "Custom":
+            if self.target_category in computed:
+                self.target_price = computed[self.target_category]
+        elif not self.target_category:
+            # Default ke Moderate kalau belum dipilih sama sekali
+            self.target_category = "Moderate (2.5R)"
+            self.target_price = computed["Moderate (2.5R)"]
 
     def check_risk_management_rules(self):
         """Check all risk management guard rails before allowing new trade."""
@@ -106,7 +145,6 @@ class TradeJournal(Document):
         """Block new trade if per-stock exposure limit is exceeded."""
         max_per_stock = settings.modal_total * (settings.max_per_stock_percent / 100)
 
-        # Get current open positions for this ticker
         current_exposure = frappe.db.get_list(
             "Trade Journal",
             filters={
@@ -133,7 +171,6 @@ class TradeJournal(Document):
         """Block new trade if total portfolio exposure limit is exceeded."""
         max_exposure = settings.modal_total * (settings.max_exposure_percent / 100)
 
-        # Get all open positions
         total_exposure = frappe.db.get_list(
             "Trade Journal",
             filters={"status": "Open"},

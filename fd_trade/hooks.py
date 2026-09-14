@@ -34,6 +34,9 @@ scheduler_events = {
         "*/30 9-16 * * 1-5": [
             "fd_trade.tasks.check_intraday_conditions"
         ],
+        "*/15 9-16 * * 1-5": [
+            "fd_trade.tasks.check_price_alerts"
+        ],
         "0 16 * * 1-5": [
             "fd_trade.tasks.daily_review_notification"
         ],
