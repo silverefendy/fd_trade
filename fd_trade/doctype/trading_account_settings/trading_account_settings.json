@@ -1,0 +1,131 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "creation": "2026-09-14 14:58:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "modal_total",
+  "risk_per_trade_percent",
+  "risk_per_trade_fast_percent",
+  "daily_loss_limit_percent",
+  "weekly_loss_limit_percent",
+  "monthly_circuit_breaker_percent",
+  "max_exposure_percent",
+  "max_per_stock_percent",
+  "max_sektor_percent",
+  "max_consecutive_losses",
+  "telegram_section",
+  "telegram_bot_token",
+  "telegram_chat_id",
+  "telegram_notifications_enabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "modal_total",
+   "fieldtype": "Currency",
+   "label": "Modal Total",
+   "default": "30000000"
+  },
+  {
+   "fieldname": "risk_per_trade_percent",
+   "fieldtype": "Float",
+   "label": "Risk Per Trade Percent",
+   "default": "0.5"
+  },
+  {
+   "fieldname": "risk_per_trade_fast_percent",
+   "fieldtype": "Float",
+   "label": "Risk Per Trade Fast Percent",
+   "default": "0.25"
+  },
+  {
+   "fieldname": "daily_loss_limit_percent",
+   "fieldtype": "Float",
+   "label": "Daily Loss Limit Percent",
+   "default": "1"
+  },
+  {
+   "fieldname": "weekly_loss_limit_percent",
+   "fieldtype": "Float",
+   "label": "Weekly Loss Limit Percent",
+   "default": "3"
+  },
+  {
+   "fieldname": "monthly_circuit_breaker_percent",
+   "fieldtype": "Float",
+   "label": "Monthly Circuit Breaker Percent",
+   "default": "5"
+  },
+  {
+   "fieldname": "max_exposure_percent",
+   "fieldtype": "Float",
+   "label": "Max Exposure Percent",
+   "default": "60"
+  },
+  {
+   "fieldname": "max_per_stock_percent",
+   "fieldtype": "Float",
+   "label": "Max Per Stock Percent",
+   "default": "15"
+  },
+  {
+   "fieldname": "max_sektor_percent",
+   "fieldtype": "Float",
+   "label": "Max Sektor Percent",
+   "default": "30"
+  },
+  {
+   "fieldname": "max_consecutive_losses",
+   "fieldtype": "Int",
+   "label": "Max Consecutive Losses",
+   "default": "3"
+  },
+  {
+   "fieldname": "telegram_section",
+   "fieldtype": "Section Break",
+   "label": "Telegram Settings"
+  },
+  {
+   "fieldname": "telegram_bot_token",
+   "fieldtype": "Password",
+   "label": "Telegram Bot Token"
+  },
+  {
+   "fieldname": "telegram_chat_id",
+   "fieldtype": "Data",
+   "label": "Telegram Chat ID"
+  },
+  {
+   "fieldname": "telegram_notifications_enabled",
+   "fieldtype": "Check",
+   "label": "Telegram Notifications Enabled",
+   "default": "1"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_single": 1,
+ "links": [],
+ "modified": "2026-09-14 14:58:00.000000",
+ "modified_by": "Administrator",
+ "module": "FD-Trade",
+ "name": "Trading Account Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

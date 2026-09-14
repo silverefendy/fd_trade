@@ -1,0 +1,232 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "creation": "2026-09-14 14:59:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "basic_info_section",
+  "date",
+  "ticker",
+  "setup",
+  "market_regime",
+  "entry_section",
+  "entry_price",
+  "stop_loss",
+  "target_price",
+  "position_lot",
+  "suggested_lot",
+  "risk_amount",
+  "risk_r",
+  "exit_section",
+  "exit_price",
+  "result_r",
+  "result_rp",
+  "status",
+  "psychology_section",
+  "followed_system",
+  "fomo",
+  "revenge",
+  "emotion",
+  "mistake",
+  "lesson",
+  "attachments_section",
+  "screenshot_before",
+  "screenshot_after",
+  "signal_source_ref"
+ ],
+ "fields": [
+  {
+   "fieldname": "basic_info_section",
+   "fieldtype": "Section Break",
+   "label": "Basic Information"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ticker",
+   "fieldtype": "Data",
+   "label": "Ticker",
+   "reqd": 1
+  },
+  {
+   "fieldname": "setup",
+   "fieldtype": "Select",
+   "label": "Setup",
+   "options": "Breakout\nPullback\nOther"
+  },
+  {
+   "fieldname": "market_regime",
+   "fieldtype": "Select",
+   "label": "Market Regime",
+   "options": "Bull\nSideways\nBear"
+  },
+  {
+   "fieldname": "entry_section",
+   "fieldtype": "Section Break",
+   "label": "Entry & Risk Management"
+  },
+  {
+   "fieldname": "entry_price",
+   "fieldtype": "Currency",
+   "label": "Entry Price",
+   "reqd": 1
+  },
+  {
+   "fieldname": "stop_loss",
+   "fieldtype": "Currency",
+   "label": "Stop Loss",
+   "reqd": 1
+  },
+  {
+   "fieldname": "target_price",
+   "fieldtype": "Currency",
+   "label": "Target Price"
+  },
+  {
+   "fieldname": "position_lot",
+   "fieldtype": "Int",
+   "label": "Position Lot"
+  },
+  {
+   "fieldname": "suggested_lot",
+   "fieldtype": "Int",
+   "label": "Suggested Lot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "risk_amount",
+   "fieldtype": "Currency",
+   "label": "Risk Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "risk_r",
+   "fieldtype": "Float",
+   "label": "Risk R",
+   "read_only": 1,
+   "default": "1.0"
+  },
+  {
+   "fieldname": "exit_section",
+   "fieldtype": "Section Break",
+   "label": "Exit & Results"
+  },
+  {
+   "fieldname": "exit_price",
+   "fieldtype": "Currency",
+   "label": "Exit Price"
+  },
+  {
+   "fieldname": "result_r",
+   "fieldtype": "Float",
+   "label": "Result R"
+  },
+  {
+   "fieldname": "result_rp",
+   "fieldtype": "Currency",
+   "label": "Result Rp",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Open\nClosed",
+   "default": "Open"
+  },
+  {
+   "fieldname": "psychology_section",
+   "fieldtype": "Section Break",
+   "label": "Psychology & Learning"
+  },
+  {
+   "fieldname": "followed_system",
+   "fieldtype": "Check",
+   "label": "Followed System"
+  },
+  {
+   "fieldname": "fomo",
+   "fieldtype": "Check",
+   "label": "FOMO"
+  },
+  {
+   "fieldname": "revenge",
+   "fieldtype": "Check",
+   "label": "Revenge"
+  },
+  {
+   "fieldname": "emotion",
+   "fieldtype": "Small Text",
+   "label": "Emotion"
+  },
+  {
+   "fieldname": "mistake",
+   "fieldtype": "Small Text",
+   "label": "Mistake"
+  },
+  {
+   "fieldname": "lesson",
+   "fieldtype": "Text",
+   "label": "Lesson"
+  },
+  {
+   "fieldname": "attachments_section",
+   "fieldtype": "Section Break",
+   "label": "Attachments"
+  },
+  {
+   "fieldname": "screenshot_before",
+   "fieldtype": "Attach Image",
+   "label": "Screenshot Before"
+  },
+  {
+   "fieldname": "screenshot_after",
+   "fieldtype": "Attach Image",
+   "label": "Screenshot After"
+  },
+  {
+   "fieldname": "signal_source_ref",
+   "fieldtype": "Link",
+   "label": "Signal Source",
+   "options": "Signal Source"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-14 14:59:00.000000",
+ "modified_by": "Administrator",
+ "module": "FD-Trade",
+ "name": "Trade Journal",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "All",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

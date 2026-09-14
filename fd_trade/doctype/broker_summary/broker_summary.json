@@ -1,0 +1,186 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "creation": "2026-09-14 14:59:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "ticker",
+  "date",
+  "price",
+  "price_change_pct",
+  "excel_file",
+  "volume_section",
+  "top1_volume",
+  "top1_pct",
+  "top3_volume",
+  "top3_pct",
+  "top5_volume",
+  "top5_pct",
+  "avg_volume",
+  "avg_pct",
+  "avg_dist_label",
+  "trading_section",
+  "buyer_count",
+  "seller_count",
+  "net_volume",
+  "net_value",
+  "average_price",
+  "broker_details",
+  "insight_notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "ticker",
+   "fieldtype": "Data",
+   "label": "Ticker",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "price",
+   "fieldtype": "Currency",
+   "label": "Price"
+  },
+  {
+   "fieldname": "price_change_pct",
+   "fieldtype": "Float",
+   "label": "Price Change Pct"
+  },
+  {
+   "fieldname": "excel_file",
+   "fieldtype": "Attach",
+   "label": "Excel File"
+  },
+  {
+   "fieldname": "volume_section",
+   "fieldtype": "Section Break",
+   "label": "Volume Analysis"
+  },
+  {
+   "fieldname": "top1_volume",
+   "fieldtype": "Float",
+   "label": "Top 1 Volume"
+  },
+  {
+   "fieldname": "top1_pct",
+   "fieldtype": "Float",
+   "label": "Top 1 Pct"
+  },
+  {
+   "fieldname": "top3_volume",
+   "fieldtype": "Float",
+   "label": "Top 3 Volume"
+  },
+  {
+   "fieldname": "top3_pct",
+   "fieldtype": "Float",
+   "label": "Top 3 Pct"
+  },
+  {
+   "fieldname": "top5_volume",
+   "fieldtype": "Float",
+   "label": "Top 5 Volume"
+  },
+  {
+   "fieldname": "top5_pct",
+   "fieldtype": "Float",
+   "label": "Top 5 Pct"
+  },
+  {
+   "fieldname": "avg_volume",
+   "fieldtype": "Float",
+   "label": "Avg Volume"
+  },
+  {
+   "fieldname": "avg_pct",
+   "fieldtype": "Float",
+   "label": "Avg Pct"
+  },
+  {
+   "fieldname": "avg_dist_label",
+   "fieldtype": "Data",
+   "label": "Avg Dist Label"
+  },
+  {
+   "fieldname": "trading_section",
+   "fieldtype": "Section Break",
+   "label": "Trading Activity"
+  },
+  {
+   "fieldname": "buyer_count",
+   "fieldtype": "Int",
+   "label": "Buyer Count"
+  },
+  {
+   "fieldname": "seller_count",
+   "fieldtype": "Int",
+   "label": "Seller Count"
+  },
+  {
+   "fieldname": "net_volume",
+   "fieldtype": "Float",
+   "label": "Net Volume"
+  },
+  {
+   "fieldname": "net_value",
+   "fieldtype": "Currency",
+   "label": "Net Value"
+  },
+  {
+   "fieldname": "average_price",
+   "fieldtype": "Currency",
+   "label": "Average Price"
+  },
+  {
+   "fieldname": "broker_details",
+   "fieldtype": "Table",
+   "label": "Broker Details",
+   "options": "Broker Summary Detail"
+  },
+  {
+   "fieldname": "insight_notes",
+   "fieldtype": "Text",
+   "label": "Insight Notes",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-14 14:59:00.000000",
+ "modified_by": "Administrator",
+ "module": "FD-Trade",
+ "name": "Broker Summary",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "All",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
