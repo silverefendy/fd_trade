@@ -2,6 +2,7 @@
  "actions": [],
  "allow_import": 1,
  "allow_rename": 1,
+ "autoname": "format:TRX-{YY}{MM}-{####}",
  "creation": "2026-09-14 14:59:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -17,6 +18,10 @@
   "target_category",
   "target_price",
   "target_suggestions",
+  "sr_section",
+  "support_level",
+  "resistance_level",
+  "sr_details",
   "position_lot",
   "suggested_lot",
   "risk_amount",
@@ -105,6 +110,30 @@
    "label": "Target Suggestions (Auto)",
    "read_only": 1,
    "description": "Perhitungan otomatis 3 skenario target berdasarkan jarak Entry Price ke Stop Loss."
+  },
+  {
+   "fieldname": "sr_section",
+   "fieldtype": "Section Break",
+   "label": "Support & Resistance (Auto)"
+  },
+  {
+   "fieldname": "support_level",
+   "fieldtype": "Currency",
+   "label": "Support Level",
+   "read_only": 1
+  },
+  {
+   "fieldname": "resistance_level",
+   "fieldtype": "Currency",
+   "label": "Resistance Level",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sr_details",
+   "fieldtype": "Small Text",
+   "label": "S/R Details (Auto)",
+   "read_only": 1,
+   "description": "Kombinasi Swing High/Low (6 bulan) + Moving Average (MA20/50/200). Klik tombol 'Fetch Support/Resistance' untuk update."
   },
   {
    "fieldname": "position_lot",

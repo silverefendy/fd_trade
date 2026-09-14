@@ -11,6 +11,10 @@
   "sector",
   "criteria_checklist",
   "notes",
+  "sr_section",
+  "support_level",
+  "resistance_level",
+  "sr_details",
   "last_updated"
  ],
  "fields": [
@@ -41,6 +45,30 @@
    "fieldname": "notes",
    "fieldtype": "Text",
    "label": "Notes"
+  },
+  {
+   "fieldname": "sr_section",
+   "fieldtype": "Section Break",
+   "label": "Support & Resistance (Auto)"
+  },
+  {
+   "fieldname": "support_level",
+   "fieldtype": "Currency",
+   "label": "Support Level",
+   "read_only": 1
+  },
+  {
+   "fieldname": "resistance_level",
+   "fieldtype": "Currency",
+   "label": "Resistance Level",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sr_details",
+   "fieldtype": "Small Text",
+   "label": "S/R Details (Auto)",
+   "read_only": 1,
+   "description": "Kombinasi Swing High/Low (6 bulan) + Moving Average (MA20/50/200). Klik tombol 'Fetch Support/Resistance' untuk update."
   },
   {
    "fieldname": "last_updated",

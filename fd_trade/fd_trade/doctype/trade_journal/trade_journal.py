@@ -209,3 +209,22 @@ def notify_on_close(doc, method=None):
     message = "Trade Closed\\nTicker: " + doc.ticker + "\\nResult R: " + str(doc.result_r) + "R\\nFollowed System: " + followed_status
 
     send_telegram_notification(message)
+
+
+@frappe.whitelist()
+def fetch_support_resistance(docname):
+    """Ambil & simpan level Support/Resistance untuk Trade Journal tertentu."""
+    from fd_trade.utils.price_data import get_support_resistance
+
+    doc = frappe.get_doc("Trade Journal", docname)
+    result = get_support_resistance(doc.ticker)
+
+    if not result:
+        frappe.throw(_("Gagal mengambil data Support/Resistance untuk ticker {0}. Cek nama ticker atau koneksi.").format(doc.ticker))
+
+    doc.support_level = result["support_level"]
+    doc.resistance_level = result["resistance_level"]
+    doc.sr_details = result["details"]
+    doc.save()
+
+    return result
