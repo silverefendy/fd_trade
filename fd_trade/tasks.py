@@ -4,7 +4,7 @@ Contains functions for scheduled jobs via Frappe scheduler.
 """
 
 import frappe
-from frappe.utils import today, get_first_day_of_month, getdate, add_to_date, flt
+from frappe.utils import today, getdate, add_to_date, flt
 from fd_trade.utils.telegram import send_telegram_notification
 
 
@@ -159,7 +159,7 @@ def monthly_circuit_breaker_check():
     system review / paper trading pause.
     """
     try:
-        first_day = get_first_day_of_month(today())
+        first_day = getdate(today()).replace(day=1)
 
         monthly_trades = frappe.db.get_list(
             "Trade Journal",
