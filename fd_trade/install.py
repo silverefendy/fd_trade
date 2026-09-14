@@ -1,4 +1,4 @@
-﻿"""
+"""
 Installation hooks for FD-Trade app.
 Called by before_install / after_install in hooks.py
 """
