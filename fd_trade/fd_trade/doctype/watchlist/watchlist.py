@@ -12,6 +12,15 @@ from frappe.utils import now
 class Watchlist(Document):
     """Watchlist entry for tracking potential trading opportunities."""
 
+    def before_insert(self):
+        """Uppercase ticker SEBELUM proses naming (autoname: field:ticker) berjalan.
+        Ini WAJIB di before_insert(), bukan validate()/before_save(), karena
+        Frappe memanggil set_new_name() sebelum run_before_save_methods()
+        di pipeline Document.insert() -- lihat frappe/model/document.py.
+        """
+        if self.ticker:
+            self.ticker = self.ticker.strip().upper()
+
     def before_save(self):
         """Update timestamp, dan auto-fetch current price + S/R setiap kali
         record baru dibuat atau ticker berubah dari sebelumnya."""
