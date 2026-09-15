@@ -23,10 +23,30 @@ class TradeJournal(Document):
 
     def validate(self):
         """Validate trade entry and calculate risk metrics."""
+        if self.ticker:
+            self.ticker = self.ticker.strip().upper()
         self.calculate_risk_metrics()
+
+        if self.is_new() or self.has_value_changed("ticker"):
+            self._auto_fetch_support_resistance()
 
         if self.is_new():
             self.check_risk_management_rules()
+
+    def _auto_fetch_support_resistance(self):
+        """Ambil Support/Resistance otomatis dari yfinance saat ticker baru
+        diisi atau diganti, fail-silent (tidak menghentikan proses save
+        kalau yfinance gagal/timeout)."""
+        if not self.ticker:
+            return
+
+        from fd_trade.utils.price_data import get_support_resistance
+
+        result = get_support_resistance(self.ticker)
+        if result:
+            self.support_level = result["support_level"]
+            self.resistance_level = result["resistance_level"]
+            self.sr_details = result["details"]
 
     def calculate_risk_metrics(self):
         """Calculate risk amount, suggested lot, target price suggestions,

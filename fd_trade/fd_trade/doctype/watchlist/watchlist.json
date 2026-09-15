@@ -2,12 +2,21 @@
  "actions": [],
  "allow_import": 1,
  "allow_rename": 1,
- "creation": "2026-09-14 15:00:00.000000",
+ "autoname": "field:ticker",
+ "creation": "2026-09-14 15:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "ticker",
+  "current_price",
+  "ohlc_section",
+  "open_price",
+  "high_price",
+  "column_break_ohlc",
+  "low_price",
+  "close_price",
   "tier",
+  "stock_group",
   "sector",
   "criteria_checklist",
   "notes",
@@ -23,20 +32,73 @@
   {
    "fieldname": "ticker",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Ticker",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "current_price",
+   "fieldtype": "Currency",
+   "label": "Current Price",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "ohlc_section",
+   "fieldtype": "Section Break",
+   "label": "Open/High/Low/Close (Hari Terakhir)",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "open_price",
+   "fieldtype": "Currency",
+   "label": "Open",
+   "read_only": 1
+  },
+  {
+   "fieldname": "high_price",
+   "fieldtype": "Currency",
+   "label": "High",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ohlc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "low_price",
+   "fieldtype": "Currency",
+   "label": "Low",
+   "read_only": 1
+  },
+  {
+   "fieldname": "close_price",
+   "fieldtype": "Currency",
+   "label": "Close",
+   "read_only": 1
   },
   {
    "fieldname": "tier",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Tier",
    "options": "A\nB\nC",
    "reqd": 1
   },
   {
+   "fieldname": "stock_group",
+   "fieldtype": "Link",
+   "label": "Stock Group",
+   "options": "Stock Group",
+   "in_list_view": 1
+  },
+  {
    "fieldname": "sector",
-   "fieldtype": "Data",
-   "label": "Sector"
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Sector",
+   "options": "Energi\nBarang Baku\nPerindustrian\nKonsumen Primer\nKonsumen Non-Primer\nKesehatan\nKeuangan\nProperti & Real Estat\nTeknologi\nInfrastruktur\nTransportasi & Logistik"
   },
   {
    "fieldname": "criteria_checklist",
@@ -56,46 +118,49 @@
   {
    "fieldname": "support_level",
    "fieldtype": "Currency",
+   "in_list_view": 1,
    "label": "Support Level",
    "read_only": 1
   },
   {
    "fieldname": "resistance_level",
    "fieldtype": "Currency",
+   "in_list_view": 1,
    "label": "Resistance Level",
    "read_only": 1
   },
   {
+   "description": "Level support kedua (lebih jauh dari harga sekarang dibanding Support Level).",
    "fieldname": "support_level_2",
    "fieldtype": "Currency",
    "label": "Support Level 2",
-   "read_only": 1,
-   "description": "Level support kedua (lebih jauh dari harga sekarang dibanding Support Level)."
+   "read_only": 1
   },
   {
+   "description": "Level resistance kedua (lebih jauh dari harga sekarang dibanding Resistance Level).",
    "fieldname": "resistance_level_2",
    "fieldtype": "Currency",
    "label": "Resistance Level 2",
-   "read_only": 1,
-   "description": "Level resistance kedua (lebih jauh dari harga sekarang dibanding Resistance Level)."
+   "read_only": 1
   },
   {
+   "description": "Kombinasi Swing High/Low (6 bulan) + Moving Average (MA20/50/200). Klik tombol 'Fetch Support/Resistance' untuk update.",
    "fieldname": "sr_details",
    "fieldtype": "Small Text",
    "label": "S/R Details (Auto)",
-   "read_only": 1,
-   "description": "Kombinasi Swing High/Low (6 bulan) + Moving Average (MA20/50/200). Klik tombol 'Fetch Support/Resistance' untuk update."
+   "read_only": 1
   },
   {
    "fieldname": "last_updated",
    "fieldtype": "Datetime",
+   "in_list_view": 1,
    "label": "Last Updated",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-14 15:00:00.000000",
+ "modified": "2026-09-15 13:04:23.773105",
  "modified_by": "Administrator",
  "module": "FD-Trade",
  "name": "Watchlist",
@@ -122,7 +187,9 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

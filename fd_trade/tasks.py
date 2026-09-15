@@ -246,3 +246,122 @@ def check_price_alerts():
 
     except Exception as e:
         frappe.log_error(f"check_price_alerts failed: {e}", "FD-Trade Scheduled Tasks")
+
+
+def refresh_all_watchlist():
+    """Auto-refresh current price, OHLC, dan Support/Resistance untuk SEMUA
+    entry Watchlist, via yfinance (delay 15-20 menit).
+
+    Job terpisah dari check_price_alerts/check_intraday_conditions supaya
+    kalau ada masalah di salah satu job, job lain tetap jalan normal.
+    Berjalan setiap 15 menit selama jam bursa (9-16, Senin-Jumat), offset
+    1 menit dari job Price Alert supaya tidak rebutan slot yang sama.
+    """
+    from fd_trade.utils.price_data import get_current_price, get_current_ohlc, get_support_resistance
+
+    try:
+        tickers = frappe.get_all("Watchlist", fields=["name", "ticker"])
+
+        updated = 0
+        skipped = 0
+
+        for row in tickers:
+            if not row.ticker:
+                skipped += 1
+                continue
+
+            try:
+                values = {}
+
+                price = get_current_price(row.ticker)
+                if price is not None:
+                    values["current_price"] = price
+
+                ohlc = get_current_ohlc(row.ticker)
+                if ohlc:
+                    values["open_price"] = ohlc["open"]
+                    values["high_price"] = ohlc["high"]
+                    values["low_price"] = ohlc["low"]
+                    values["close_price"] = ohlc["close"]
+
+                sr_result = get_support_resistance(row.ticker)
+                if sr_result:
+                    values["support_level"] = sr_result["support_level"]
+                    values["support_level_2"] = sr_result["support_level_2"]
+                    values["resistance_level"] = sr_result["resistance_level"]
+                    values["resistance_level_2"] = sr_result["resistance_level_2"]
+                    values["sr_details"] = sr_result["details"]
+
+                if values:
+                    values["last_updated"] = frappe.utils.now()
+                    frappe.db.set_value("Watchlist", row.name, values)
+                    updated += 1
+                else:
+                    skipped += 1
+
+            except Exception as row_error:
+                frappe.log_error(
+                    f"refresh_all_watchlist failed for {row.ticker}: {row_error}",
+                    "FD-Trade Scheduled Tasks"
+                )
+                skipped += 1
+                continue
+
+        frappe.db.commit()
+        frappe.logger().info(f"refresh_all_watchlist done. Updated: {updated}, Skipped: {skipped}")
+
+    except Exception as e:
+        frappe.log_error(f"refresh_all_watchlist failed: {e}", "FD-Trade Scheduled Tasks")
+
+
+def refresh_open_trades_sr():
+    """Auto-refresh Support/Resistance untuk semua Trade Journal berstatus
+    Open, via yfinance (delay 15-20 menit).
+
+    Job terpisah dari refresh_all_watchlist/check_price_alerts/
+    check_intraday_conditions supaya independen satu sama lain.
+    Berjalan setiap 30 menit selama jam bursa (9-16, Senin-Jumat).
+    """
+    from fd_trade.utils.price_data import get_support_resistance
+
+    try:
+        open_trades = frappe.get_all(
+            "Trade Journal",
+            filters={"status": "Open"},
+            fields=["name", "ticker"]
+        )
+
+        updated = 0
+        skipped = 0
+
+        for row in open_trades:
+            if not row.ticker:
+                skipped += 1
+                continue
+
+            try:
+                result = get_support_resistance(row.ticker)
+                if result:
+                    frappe.db.set_value("Trade Journal", row.name, {
+                        "support_level": result["support_level"],
+                        "support_level_2": result["support_level_2"],
+                        "resistance_level": result["resistance_level"],
+                        "resistance_level_2": result["resistance_level_2"],
+                        "sr_details": result["details"],
+                    })
+                    updated += 1
+                else:
+                    skipped += 1
+            except Exception as row_error:
+                frappe.log_error(
+                    f"refresh_open_trades_sr failed for {row.ticker}: {row_error}",
+                    "FD-Trade Scheduled Tasks"
+                )
+                skipped += 1
+                continue
+
+        frappe.db.commit()
+        frappe.logger().info(f"refresh_open_trades_sr done. Updated: {updated}, Skipped: {skipped}")
+
+    except Exception as e:
+        frappe.log_error(f"refresh_open_trades_sr failed: {e}", "FD-Trade Scheduled Tasks")

@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "linked_trade",
+  "linked_watchlist",
   "ticker",
   "alert_type",
   "column_break_1",
@@ -23,15 +24,19 @@
    "fieldtype": "Link",
    "label": "Trade Journal",
    "options": "Trade Journal",
-   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "linked_watchlist",
+   "fieldtype": "Link",
+   "label": "Watchlist",
+   "options": "Watchlist",
    "in_list_view": 1
   },
   {
    "fieldname": "ticker",
    "fieldtype": "Data",
    "label": "Ticker",
-   "fetch_from": "linked_trade.ticker",
-   "fetch_if_empty": 1,
    "in_list_view": 1,
    "reqd": 1
   },
@@ -89,7 +94,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-14 16:00:00.000000",
+ "modified": "2026-09-15 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "FD-Trade",
  "name": "Price Alert",
@@ -118,5 +123,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "track_changes": 1
+ "track_changes": 1,
+ "autoname": "format:ALERT-{YY}{MM}-{####}"
 }

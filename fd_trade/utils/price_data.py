@@ -40,6 +40,33 @@ def get_current_price(ticker):
         frappe.log_error(f"Failed to fetch price for {ticker}: {e}", "FD-Trade Price Data")
         return None
 
+
+def get_current_ohlc(ticker):
+    """Ambil Open/High/Low/Close hari terakhir untuk ticker IDX.
+
+    Returns:
+        dict dengan keys: open, high, low, close -- atau None jika gagal.
+    """
+    try:
+        full_ticker = f"{ticker}.JK"
+        stock = yf.Ticker(full_ticker)
+        hist = stock.history(period="1d")
+
+        if hist.empty:
+            frappe.log_error(f"No OHLC data for ticker {full_ticker}", "FD-Trade Price Data")
+            return None
+
+        last = hist.iloc[-1]
+        return {
+            "open": float(last["Open"]),
+            "high": float(last["High"]),
+            "low": float(last["Low"]),
+            "close": float(last["Close"]),
+        }
+    except Exception as e:
+        frappe.log_error(f"Failed to fetch OHLC for {ticker}: {e}", "FD-Trade Price Data")
+        return None
+
 def get_support_resistance(ticker):
     """Hitung 2 level support & 2 level resistance terdekat, kombinasi
     Swing High/Low + Moving Average.

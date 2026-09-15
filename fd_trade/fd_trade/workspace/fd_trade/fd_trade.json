@@ -1,0 +1,72 @@
+{
+ "app": "fd_trade",
+ "charts": [],
+ "content": "[{\"id\": \"header_fdtrade\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>FD-Trade</b></span>\", \"col\": 12}}, {\"id\": \"para_fdtrade\", \"type\": \"paragraph\", \"data\": {\"text\": \"Personal stock trading journal & risk management untuk IDX (Bursa Efek Indonesia).\", \"col\": 12}}]",
+ "creation": "2026-09-15 00:00:00",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "graph",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "FD-Trade",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "DocTypes",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Watchlist",
+   "link_count": 0,
+   "link_to": "Watchlist",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Broker Summary",
+   "link_count": 0,
+   "link_to": "Broker Summary",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Price Alert",
+   "link_count": 0,
+   "link_to": "Price Alert",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-15 12:09:30.863678",
+ "modified_by": "Administrator",
+ "module": "FD-Trade",
+ "name": "FD-Trade",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [],
+ "title": "FD-Trade",
+ "type": "Workspace"
+}

@@ -13,15 +13,6 @@ app_color = "grey"
 app_email = "silverefendy@users.noreply.github.com"
 app_license = "MIT"
 
-add_to_apps_screen = [
-    {
-        "name": "fd_trade",
-        "logo": "/assets/fd_trade/images/fd_trade-logo.svg",
-        "title": "FD-Trade",
-        "route": "/desk/fd-trade",
-    }
-]
-
 # Includes in JS
 # include_js = []
 
@@ -46,12 +37,6 @@ scheduler_events = {
         ],
         "*/15 9-16 * * 1-5": [
             "fd_trade.tasks.check_price_alerts"
-        ],
-        "1-59/15 9-16 * * 1-5": [
-            "fd_trade.tasks.refresh_all_watchlist"
-        ],
-        "2-59/30 9-16 * * 1-5": [
-            "fd_trade.tasks.refresh_open_trades_sr"
         ],
         "0 16 * * 1-5": [
             "fd_trade.tasks.daily_review_notification"
