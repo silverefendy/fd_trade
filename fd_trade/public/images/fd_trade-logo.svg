@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1b2038"/>
+      <stop offset="100%" stop-color="#0d0f1a"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="200" height="200" rx="36" fill="url(#bg)"/>
+
+  <!-- subtle grid lines -->
+  <g stroke="#2a3050" stroke-width="1">
+    <line x1="0" y1="66" x2="200" y2="66"/>
+    <line x1="0" y1="133" x2="200" y2="133"/>
+  </g>
+
+  <!-- candlesticks -->
+  <g>
+    <!-- candle 1: red (down) -->
+    <line x1="52" y1="58" x2="52" y2="118" stroke="#ef4757" stroke-width="4" stroke-linecap="round"/>
+    <rect x="42" y="72" width="20" height="34" rx="3" fill="#ef4757"/>
+
+    <!-- candle 2: green (up), taller -->
+    <line x1="100" y1="40" x2="100" y2="150" stroke="#2ecc71" stroke-width="4" stroke-linecap="round"/>
+    <rect x="90" y="96" width="20" height="50" rx="3" fill="#2ecc71"/>
+
+    <!-- candle 3: red (small down) -->
+    <line x1="148" y1="70" x2="148" y2="112" stroke="#ef4757" stroke-width="4" stroke-linecap="round"/>
+    <rect x="138" y="78" width="20" height="20" rx="3" fill="#ef4757"/>
+  </g>
+
+  <!-- uptrend arrow accent -->
+  <path d="M38 148 L86 108 L112 128 L162 66" fill="none" stroke="#f4c542" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  <path d="M146 66 L162 66 L162 82" fill="none" stroke="#f4c542" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+</svg>
