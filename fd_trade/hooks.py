@@ -22,6 +22,14 @@ add_to_apps_screen = [
     }
 ]
 
+# Fixtures
+fixtures = [
+    {
+        "doctype": "Workspace",
+        "filters": [["name", "=", "FD-Trade"]]
+    }
+]
+
 # Includes in JS
 # include_js = []
 
