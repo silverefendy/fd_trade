@@ -30,6 +30,11 @@ fixtures = [
     }
 ]
 
+# List View JS
+doctype_list_js = {
+    "Watchlist": "public/js/watchlist_list.js"
+}
+
 # Includes in JS
 # include_js = []
 
