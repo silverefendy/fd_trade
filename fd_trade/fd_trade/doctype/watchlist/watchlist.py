@@ -28,7 +28,9 @@ def fetch_support_resistance(docname):
         frappe.throw(_("Gagal mengambil data Support/Resistance untuk ticker {0}. Cek nama ticker atau koneksi.").format(doc.ticker))
 
     doc.support_level = result["support_level"]
+    doc.support_level_2 = result["support_level_2"]
     doc.resistance_level = result["resistance_level"]
+    doc.resistance_level_2 = result["resistance_level_2"]
     doc.sr_details = result["details"]
     doc.save()
 

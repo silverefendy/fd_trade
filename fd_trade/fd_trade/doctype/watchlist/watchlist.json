@@ -14,6 +14,8 @@
   "sr_section",
   "support_level",
   "resistance_level",
+  "support_level_2",
+  "resistance_level_2",
   "sr_details",
   "last_updated"
  ],
@@ -62,6 +64,20 @@
    "fieldtype": "Currency",
    "label": "Resistance Level",
    "read_only": 1
+  },
+  {
+   "fieldname": "support_level_2",
+   "fieldtype": "Currency",
+   "label": "Support Level 2",
+   "read_only": 1,
+   "description": "Level support kedua (lebih jauh dari harga sekarang dibanding Support Level)."
+  },
+  {
+   "fieldname": "resistance_level_2",
+   "fieldtype": "Currency",
+   "label": "Resistance Level 2",
+   "read_only": 1,
+   "description": "Level resistance kedua (lebih jauh dari harga sekarang dibanding Resistance Level)."
   },
   {
    "fieldname": "sr_details",

@@ -40,16 +40,16 @@ def get_current_price(ticker):
         frappe.log_error(f"Failed to fetch price for {ticker}: {e}", "FD-Trade Price Data")
         return None
 
-
 def get_support_resistance(ticker):
-    """Hitung level support & resistance kombinasi Swing High/Low + Moving Average.
+    """Hitung 2 level support & 2 level resistance terdekat, kombinasi
+    Swing High/Low + Moving Average.
 
     Menggunakan histori 6 bulan harian. Swing point dideteksi dengan window
     5 hari kiri-kanan (titik balik lokal). MA yang dipakai: MA20, MA50, MA200.
 
     Returns:
-        dict dengan keys: support_level, resistance_level, details (str)
-        atau None jika data tidak cukup / gagal fetch.
+        dict dengan keys: support_level, support_level_2, resistance_level,
+        resistance_level_2, details (str) -- atau None jika data tidak cukup.
     """
     try:
         full_ticker = f"{ticker}.JK"
@@ -79,23 +79,39 @@ def get_support_resistance(ticker):
             if lows[i] == min(seg_l):
                 swing_lows.append(float(lows[i]))
 
-        resistances_above = sorted(h for h in swing_highs if h > current_price)
-        supports_below = sorted((l for l in swing_lows if l < current_price), reverse=True)
+        ma_values = [v for v in [ma20, ma50, ma200] if v is not None]
 
-        swing_resistance = resistances_above[0] if resistances_above else None
-        swing_support = supports_below[0] if supports_below else None
+        # Gabungkan semua kandidat, hilangkan duplikat yang terlalu berdekatan (<0.5% beda)
+        def dedupe(values):
+            values = sorted(set(values))
+            result = []
+            for v in values:
+                if not result or abs(v - result[-1]) / result[-1] > 0.005:
+                    result.append(v)
+            return result
 
-        support_candidates = [v for v in [swing_support, ma20, ma50, ma200] if v is not None and v < current_price]
-        resistance_candidates = [v for v in [swing_resistance, ma20, ma50, ma200] if v is not None and v > current_price]
+        support_candidates = dedupe([v for v in (swing_lows + ma_values) if v < current_price])
+        resistance_candidates = dedupe([v for v in (swing_highs + ma_values) if v > current_price])
 
-        support_level = max(support_candidates) if support_candidates else None
-        resistance_level = min(resistance_candidates) if resistance_candidates else None
+        # Support: urut dari yang PALING DEKAT (tertinggi) ke yang lebih jauh
+        support_candidates = sorted(support_candidates, reverse=True)
+        # Resistance: urut dari yang PALING DEKAT (terendah) ke yang lebih jauh
+        resistance_candidates = sorted(resistance_candidates)
+
+        support_level = support_candidates[0] if len(support_candidates) > 0 else None
+        support_level_2 = support_candidates[1] if len(support_candidates) > 1 else None
+        resistance_level = resistance_candidates[0] if len(resistance_candidates) > 0 else None
+        resistance_level_2 = resistance_candidates[1] if len(resistance_candidates) > 1 else None
 
         detail_lines = [f"Current Price: Rp{current_price:,.0f}"]
-        if swing_support:
-            detail_lines.append(f"Swing Support: Rp{swing_support:,.0f}")
-        if swing_resistance:
-            detail_lines.append(f"Swing Resistance: Rp{swing_resistance:,.0f}")
+        if swing_lows:
+            nearest_swing_low = max([v for v in swing_lows if v < current_price], default=None)
+            if nearest_swing_low:
+                detail_lines.append(f"Swing Support: Rp{nearest_swing_low:,.0f}")
+        if swing_highs:
+            nearest_swing_high = min([v for v in swing_highs if v > current_price], default=None)
+            if nearest_swing_high:
+                detail_lines.append(f"Swing Resistance: Rp{nearest_swing_high:,.0f}")
         if ma20:
             detail_lines.append(f"MA20: Rp{ma20:,.0f}")
         if ma50:
@@ -105,7 +121,9 @@ def get_support_resistance(ticker):
 
         return {
             "support_level": support_level,
+            "support_level_2": support_level_2,
             "resistance_level": resistance_level,
+            "resistance_level_2": resistance_level_2,
             "details": "\n".join(detail_lines),
         }
 
