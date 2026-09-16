@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "watchlist",
+  "linked_trade",
   "ticker",
   "timestamp",
   "current_price",
@@ -15,6 +16,7 @@
   "recommendation",
   "recommendation_price_low",
   "recommendation_price_high",
+  "stop_loss",
   "risk_amount",
   "risk_per_share",
   "suggested_lot",
@@ -29,6 +31,14 @@
    "reqd": 1,
    "in_list_view": 1,
    "in_standard_filter": 1
+  },
+  {
+   "fieldname": "linked_trade",
+   "fieldtype": "Link",
+   "label": "Trade Journal",
+   "options": "Trade Journal",
+   "in_standard_filter": 1,
+   "description": "Diisi manual/nanti otomatis kalau trade dibuat dari sinyal ini."
   },
   {
    "fieldname": "ticker",
@@ -71,12 +81,19 @@
   {
    "fieldname": "recommendation_price_low",
    "fieldtype": "Currency",
-   "label": "Recommend Price (Low)"
+   "label": "Recom B/S"
   },
   {
    "fieldname": "recommendation_price_high",
    "fieldtype": "Currency",
    "label": "Recommend Price (High)"
+  },
+  {
+   "fieldname": "stop_loss",
+   "fieldtype": "Currency",
+   "label": "Stop Loss (Buy)",
+   "read_only": 1,
+   "description": "Level invalidasi teknikal (support kedua) untuk sinyal Buy. Kosong untuk Sell/Wait/Avoid."
   },
   {
    "fieldname": "risk_amount",

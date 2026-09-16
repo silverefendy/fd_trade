@@ -177,6 +177,26 @@ def get_support_resistance(ticker):
         return None
 
 
+def round_to_tick(price):
+    """Bulatkan harga ke kelipatan fraksi harga resmi BEI (Kep-00023/BEI/04-2016),
+    supaya angka yang disarankan benar-benar bisa dieksekusi di market -- bukan
+    angka desimal yang tidak valid untuk order beli/jual.
+    """
+    if not price:
+        return price
+    if price < 200:
+        tick = 1
+    elif price < 500:
+        tick = 2
+    elif price < 2000:
+        tick = 5
+    elif price < 5000:
+        tick = 10
+    else:
+        tick = 25
+    return round(price / tick) * tick
+
+
 def calculate_recommendation(ticker, current_price, trend, support_level, support_level_2,
                               resistance_level):
     """Rule-based recommendation (Fase 1) -- BUKAN prediksi harga, murni
@@ -202,12 +222,13 @@ def calculate_recommendation(ticker, current_price, trend, support_level, suppor
         if gap_pct <= threshold:
             result = {
                 "recommendation": "Buy",
-                "recommendation_price_low": support_level,
-                "recommendation_price_high": support_level * 1.01,
+                "recommendation_price_low": round_to_tick(support_level),
+                "recommendation_price_high": round_to_tick(support_level * 1.01),
             }
             if support_level_2:
                 risk_per_share = current_price - support_level_2
                 if risk_per_share > 0:
+                    result["stop_loss"] = round_to_tick(support_level_2)
                     from fd_trade.utils.risk_engine import calculate_position_sizing
                     sizing = calculate_position_sizing(ticker, current_price, risk_per_share)
                     if sizing:
@@ -224,8 +245,8 @@ def calculate_recommendation(ticker, current_price, trend, support_level, suppor
         if gap_pct <= threshold:
             return {
                 "recommendation": "Sell",
-                "recommendation_price_low": resistance_level * 0.99,
-                "recommendation_price_high": resistance_level,
+                "recommendation_price_low": round_to_tick(resistance_level * 0.99),
+                "recommendation_price_high": round_to_tick(resistance_level),
             }
 
     return {"recommendation": "Wait"}

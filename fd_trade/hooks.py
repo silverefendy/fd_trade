@@ -27,12 +27,25 @@ fixtures = [
     {
         "doctype": "Workspace",
         "filters": [["name", "=", "FD-Trade"]]
+    },
+    {
+        "doctype": "Property Setter",
+        "filters": [["doc_type", "in", [
+            "Watchlist", "Watchlist Signal", "Trade Journal",
+            "Price Alert", "Broker Summary", "Broker Summary Detail",
+            "Signal Source", "Trading Account Settings"
+        ]]]
+    },
+    {
+        "doctype": "List View Settings",
+        "filters": [["name", "in", ["Watchlist", "Watchlist Signal", "Trade Journal", "Price Alert", "Broker Summary", "Signal Source"]]]
     }
 ]
 
 # List View JS
 doctype_list_js = {
-    "Watchlist": "public/js/watchlist_list.js"
+    "Watchlist": "public/js/watchlist_list.js",
+    "Watchlist Signal": "public/js/watchlist_signal_list.js"
 }
 
 # Includes in JS
