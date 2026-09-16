@@ -93,3 +93,33 @@ def fetch_support_resistance(docname):
     doc.save()
 
     return result
+
+
+@frappe.whitelist()
+def refresh_current_price(docname):
+    """Ambil & simpan current price + OHLC terbaru untuk Watchlist tertentu
+    (dipanggil manual dari tombol UI "Refresh Harga Sekarang").
+    Tidak menyentuh Support/Resistance -- itu tugas fetch_support_resistance()."""
+    from fd_trade.utils.price_data import get_current_price, get_current_ohlc
+
+    doc = frappe.get_doc("Watchlist", docname)
+    price = get_current_price(doc.ticker)
+
+    if price is None:
+        frappe.throw(
+            _("Gagal mengambil harga terkini untuk ticker {0}. Cek nama ticker atau koneksi.").format(doc.ticker)
+        )
+
+    doc.current_price = price
+
+    ohlc = get_current_ohlc(doc.ticker)
+    if ohlc:
+        doc.open_price = ohlc["open"]
+        doc.high_price = ohlc["high"]
+        doc.low_price = ohlc["low"]
+        doc.close_price = ohlc["close"]
+
+    doc.last_updated = now()
+    doc.save()
+
+    return {"current_price": doc.current_price}
