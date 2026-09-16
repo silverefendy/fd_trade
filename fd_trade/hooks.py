@@ -72,6 +72,9 @@ scheduler_events = {
         "0 16 * * 1-5": [
             "fd_trade.tasks.daily_review_notification"
         ],
+        "0 17 * * 1-5": [
+            "fd_trade.tasks.cleanup_old_watchlist_signals"
+        ],
         "0 17 * * 5": [
             "fd_trade.tasks.weekly_review_notification"
         ],

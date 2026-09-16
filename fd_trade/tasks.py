@@ -90,11 +90,11 @@ def daily_review_notification():
         compliance_rate = (followed_count / count * 100) if count > 0 else 0
 
         message = (
-            f"Daily Trading Review ({today_date})\\n"
-            f"Trades: {count}\\n"
-            f"Wins: {wins}\\n"
-            f"Losses: {losses}\\n"
-            f"Total P&L: {total_pnl}\\n"
+            f"Daily Trading Review ({today_date})\n"
+            f"Trades: {count}\n"
+            f"Wins: {wins}\n"
+            f"Losses: {losses}\n"
+            f"Total P&L: {total_pnl}\n"
             f"System Compliance: {compliance_rate:.1f}%"
         )
 
@@ -141,12 +141,12 @@ def weekly_review_notification():
                     max_drawdown = running_pnl
 
         message = (
-            f"Weekly Trading Review\\n"
-            f"Trades: {count}\\n"
-            f"Win Rate: {win_rate:.1f}%\\n"
-            f"Total R: {total_r:.2f}\\n"
-            f"Max Drawdown: {max_drawdown:.2f}R\\n"
-            f"FOMO Trades: {fomo_count}\\n"
+            f"Weekly Trading Review\n"
+            f"Trades: {count}\n"
+            f"Win Rate: {win_rate:.1f}%\n"
+            f"Total R: {total_r:.2f}\n"
+            f"Max Drawdown: {max_drawdown:.2f}R\n"
+            f"FOMO Trades: {fomo_count}\n"
             f"Revenge Trades: {revenge_count}"
         )
 
@@ -229,11 +229,30 @@ def check_price_alerts():
                 triggered = True
 
             if triggered:
+                risk_lines = ""
+                if alert.linked_trade:
+                    trade = frappe.db.get_value(
+                        "Trade Journal", alert.linked_trade,
+                        ["entry_price", "position_lot", "risk_amount"],
+                        as_dict=True
+                    )
+                    if trade and trade.entry_price and trade.position_lot:
+                        unrealized_pnl = (current_price - trade.entry_price) * trade.position_lot * 100
+                        risk_status = "N/A"
+                        if trade.risk_amount:
+                            pct_of_risk = (unrealized_pnl / trade.risk_amount) * 100
+                            risk_status = f"{pct_of_risk:+.0f}% dari risk plan"
+                        risk_lines = (
+                            f"Entry: Rp{trade.entry_price:,.0f} | Lot: {trade.position_lot}\n"
+                            f"Unrealized P&L jika exit sekarang: Rp{unrealized_pnl:,.0f} ({risk_status})\n"
+                        )
+
                 message = (
                     f"\U0001F514 PRICE ALERT: {alert.ticker}\n"
                     f"Type: {alert.alert_type}\n"
                     f"Trigger: Rp{alert.trigger_price:,.0f} | Current: Rp{current_price:,.0f}\n"
                     f"Linked Trade: {alert.linked_trade}\n"
+                    f"{risk_lines}"
                     f"(Catatan: harga yfinance delay 15-20 menit, konfirmasi manual sebelum eksekusi)"
                 )
                 send_telegram_notification(message)
@@ -291,11 +310,23 @@ def refresh_all_watchlist():
                     values["resistance_level"] = sr_result["resistance_level"]
                     values["resistance_level_2"] = sr_result["resistance_level_2"]
                     values["sr_details"] = sr_result["details"]
+                    values["trend_status"] = sr_result.get("trend")
 
                 if values:
                     values["last_updated"] = frappe.utils.now()
                     frappe.db.set_value("Watchlist", row.name, values)
                     updated += 1
+
+                    from fd_trade.fd_trade.doctype.watchlist_signal.watchlist_signal import create_signal
+                    create_signal(
+                        watchlist_name=row.name,
+                        ticker=row.ticker,
+                        current_price=values.get("current_price"),
+                        trend_status=values.get("trend_status"),
+                        support_level=values.get("support_level"),
+                        support_level_2=values.get("support_level_2"),
+                        resistance_level=values.get("resistance_level"),
+                    )
                 else:
                     skipped += 1
 
@@ -405,3 +436,24 @@ def refresh_ihsg_trend_now():
     """Wrapper whitelisted untuk dipanggil manual dari tombol UI."""
     refresh_ihsg_trend()
     return {"status": "done"}
+
+
+def cleanup_old_watchlist_signals():
+    """Hapus record Watchlist Signal yang lebih tua dari 60 hari, supaya
+    tabel histori tidak membengkak tanpa batas. Jalan sekali sehari,
+    setelah jam bursa tutup."""
+    try:
+        cutoff = frappe.utils.add_days(frappe.utils.now(), -60)
+        old_signals = frappe.get_all(
+            "Watchlist Signal",
+            filters={"timestamp": ["<", cutoff]},
+            pluck="name"
+        )
+        for name in old_signals:
+            frappe.delete_doc("Watchlist Signal", name, ignore_permissions=True, force=True)
+
+        frappe.db.commit()
+        frappe.logger().info(f"cleanup_old_watchlist_signals done. Dihapus: {len(old_signals)} record.")
+
+    except Exception as e:
+        frappe.log_error(f"cleanup_old_watchlist_signals failed: {e}", "FD-Trade Scheduled Tasks")

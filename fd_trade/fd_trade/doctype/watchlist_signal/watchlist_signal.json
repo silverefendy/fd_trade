@@ -1,0 +1,134 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:WS-{YY}{MM}{DD}-{####}",
+ "creation": "2026-09-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "watchlist",
+  "ticker",
+  "timestamp",
+  "current_price",
+  "trend_status",
+  "column_break_1",
+  "recommendation",
+  "recommendation_price_low",
+  "recommendation_price_high",
+  "risk_amount",
+  "risk_per_share",
+  "suggested_lot",
+  "suggested_position_rp"
+ ],
+ "fields": [
+  {
+   "fieldname": "watchlist",
+   "fieldtype": "Link",
+   "label": "Watchlist",
+   "options": "Watchlist",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "ticker",
+   "fieldtype": "Data",
+   "label": "Ticker",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "label": "Timestamp",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "current_price",
+   "fieldtype": "Currency",
+   "label": "Current Price"
+  },
+  {
+   "fieldname": "trend_status",
+   "fieldtype": "Select",
+   "label": "Trend",
+   "options": "Bullish Kuat\nBullish Lemah\nSideways\nBearish Lemah\nBearish Kuat"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "recommendation",
+   "fieldtype": "Select",
+   "label": "Recommendation",
+   "options": "Buy\nWait\nSell\nAvoid",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "recommendation_price_low",
+   "fieldtype": "Currency",
+   "label": "Recommend Price (Low)"
+  },
+  {
+   "fieldname": "recommendation_price_high",
+   "fieldtype": "Currency",
+   "label": "Recommend Price (High)"
+  },
+  {
+   "fieldname": "risk_amount",
+   "fieldtype": "Currency",
+   "label": "Risk Amount"
+  },
+  {
+   "fieldname": "risk_per_share",
+   "fieldtype": "Currency",
+   "label": "Risk Per Share"
+  },
+  {
+   "fieldname": "suggested_lot",
+   "fieldtype": "Int",
+   "label": "Suggested Lot",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "suggested_position_rp",
+   "fieldtype": "Currency",
+   "label": "Suggested Position (Rp)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "FD-Trade",
+ "name": "Watchlist Signal",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "All",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "timestamp",
+ "sort_order": "DESC",
+ "track_changes": 0
+}

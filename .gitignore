@@ -52,3 +52,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+*.backup
+*.backup[0-9]
+*.bak-*

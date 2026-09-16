@@ -58,6 +58,17 @@ class Watchlist(Document):
             self.sr_details = sr_result["details"]
             self.trend_status = sr_result.get("trend")
 
+        from fd_trade.fd_trade.doctype.watchlist_signal.watchlist_signal import create_signal
+        create_signal(
+            watchlist_name=self.name,
+            ticker=self.ticker,
+            current_price=self.current_price,
+            trend_status=self.trend_status,
+            support_level=self.support_level,
+            support_level_2=self.support_level_2,
+            resistance_level=self.resistance_level,
+        )
+
 
 @frappe.whitelist()
 def fetch_support_resistance(docname):
@@ -91,6 +102,17 @@ def fetch_support_resistance(docname):
     doc.sr_details = result["details"]
     doc.trend_status = result.get("trend")
     doc.save()
+
+    from fd_trade.fd_trade.doctype.watchlist_signal.watchlist_signal import create_signal
+    create_signal(
+        watchlist_name=doc.name,
+        ticker=doc.ticker,
+        current_price=doc.current_price,
+        trend_status=doc.trend_status,
+        support_level=doc.support_level,
+        support_level_2=doc.support_level_2,
+        resistance_level=doc.resistance_level,
+    )
 
     return result
 

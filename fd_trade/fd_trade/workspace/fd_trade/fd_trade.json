@@ -1,8 +1,8 @@
 {
  "app": "fd_trade",
  "charts": [],
- "content": "[{\"id\": \"header_fdtrade\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>FD-Trade</b></span>\", \"col\": 12}}, {\"id\": \"para_fdtrade\", \"type\": \"paragraph\", \"data\": {\"text\": \"Personal stock trading journal & risk management untuk IDX (Bursa Efek Indonesia).\", \"col\": 12}}]",
- "creation": "2026-09-15 00:00:00",
+ "content": "[{\"id\": \"header_fdtrade\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>FD-Trade</b></span>\", \"col\": 12}}, {\"id\": \"para_fdtrade\", \"type\": \"paragraph\", \"data\": {\"text\": \"Personal stock trading journal & risk management untuk IDX (Bursa Efek Indonesia).\", \"col\": 12}}, {\"id\": \"card_doctypes\", \"type\": \"card\", \"data\": {\"card_name\": \"DocTypes\", \"col\": 4}}]",
+ "creation": "2026-09-16 14:50:41.438414",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -18,7 +18,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "DocTypes",
-   "link_count": 3,
+   "link_count": 4,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -52,9 +52,19 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Watchlist Signal",
+   "link_count": 0,
+   "link_to": "Watchlist Signal",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-09-15 12:09:30.863678",
+ "modified": "2026-09-16 15:14:09.615579",
  "modified_by": "Administrator",
  "module": "FD-Trade",
  "name": "FD-Trade",

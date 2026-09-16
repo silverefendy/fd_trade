@@ -73,7 +73,7 @@ frappe.listview_settings["Watchlist"] = {
                 "Transportasi & Logistik": "#ffccbc",
             };
             const bg = sector_colors[value] || "#e0e0e0";
-            return `<span style="background-color: ${bg}; color: #333; padding: 2px 8px; border-radius: 3px; font-size: 11px; white-space: nowrap;">${value}</span>`;
+            return `<span style="background-color: ${bg}; color: #333; padding: 2px 8px; border-radius: 3px; white-space: nowrap;">${value}</span>`;
         },
 
         trend_status: (value) => {
@@ -86,7 +86,7 @@ frappe.listview_settings["Watchlist"] = {
                 "Bearish Kuat": "#c62828",
             };
             const bg = colors[value] || "#e0e0e0";
-            return `<span style="background-color: ${bg}; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px; white-space: nowrap;">${value}</span>`;
+            return `<span style="background-color: ${bg}; color: white; padding: 2px 8px; border-radius: 3px; white-space: nowrap;">${value}</span>`;
         },
 
         tier: (value) => {
@@ -109,7 +109,7 @@ frappe.listview_settings["Watchlist"] = {
                 hash = value.charCodeAt(i) + ((hash << 5) - hash);
             }
             const bg = palette[Math.abs(hash) % palette.length];
-            return `<span style="background-color: ${bg}; color: #333; padding: 2px 8px; border-radius: 3px; font-size: 11px; white-space: nowrap;">${value}</span>`;
+            return `<span style="background-color: ${bg}; color: #333; padding: 2px 8px; border-radius: 3px; white-space: nowrap;">${value}</span>`;
         },
     },
 

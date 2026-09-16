@@ -125,10 +125,10 @@ def get_support_resistance(ticker):
         # Resistance: urut dari yang PALING DEKAT (terendah) ke yang lebih jauh
         resistance_candidates = sorted(resistance_candidates)
 
-        support_level = support_candidates[0] if len(support_candidates) > 0 else None
-        support_level_2 = support_candidates[1] if len(support_candidates) > 1 else None
-        resistance_level = resistance_candidates[0] if len(resistance_candidates) > 0 else None
-        resistance_level_2 = resistance_candidates[1] if len(resistance_candidates) > 1 else None
+        support_level = support_candidates[0] if len(support_candidates) > 0 else 0
+        support_level_2 = support_candidates[1] if len(support_candidates) > 1 else 0
+        resistance_level = resistance_candidates[0] if len(resistance_candidates) > 0 else 0
+        resistance_level_2 = resistance_candidates[1] if len(resistance_candidates) > 1 else 0
 
         detail_lines = [f"Current Price: Rp{current_price:,.0f}"]
         if swing_lows:
@@ -175,3 +175,57 @@ def get_support_resistance(ticker):
     except Exception as e:
         frappe.log_error(f"get_support_resistance failed for {ticker}: {e}", "FD-Trade Price Data")
         return None
+
+
+def calculate_recommendation(ticker, current_price, trend, support_level, support_level_2,
+                              resistance_level):
+    """Rule-based recommendation (Fase 1) -- BUKAN prediksi harga, murni
+    penerjemahan kondisi teknikal saat ini menjadi Buy/Wait/Sell/Avoid +
+    entry zone + position sizing berbasis risk management yang sudah
+    dikonfigurasi di Trading Account Settings.
+
+    Priority order (satu saham hanya dapat SATU recommendation):
+    1. Trend "Bearish Kuat" -> Avoid, apapun posisi harga
+    2. Dekat Support (price >= support, gap <= 2%) -> Buy + entry zone + lot
+    3. Dekat Resistance (price <= resistance, gap <= 2%), trend bukan
+       "Bullish Kuat" -> Sell (bukan short -- kurangi/keluar posisi jika
+       sudah pegang, jangan entry baru jika belum)
+    4. Selain itu -> Wait
+    """
+    threshold = 0.02  # 2%
+
+    if trend == "Bearish Kuat":
+        return {"recommendation": "Avoid"}
+
+    if support_level and current_price is not None and current_price >= support_level:
+        gap_pct = (current_price - support_level) / support_level
+        if gap_pct <= threshold:
+            result = {
+                "recommendation": "Buy",
+                "recommendation_price_low": support_level,
+                "recommendation_price_high": support_level * 1.01,
+            }
+            if support_level_2:
+                risk_per_share = current_price - support_level_2
+                if risk_per_share > 0:
+                    from fd_trade.utils.risk_engine import calculate_position_sizing
+                    sizing = calculate_position_sizing(ticker, current_price, risk_per_share)
+                    if sizing:
+                        result["risk_amount"] = sizing["risk_amount"]
+                        result["risk_per_share"] = sizing["risk_per_share"]
+                        result["suggested_lot"] = sizing["final_lot"]
+                        result["suggested_position_rp"] = sizing["suggested_position_rp"]
+                        result["sizing_limiting_factor"] = sizing["limiting_factor"]
+            return result
+
+    if (resistance_level and current_price is not None and current_price <= resistance_level
+            and trend != "Bullish Kuat"):
+        gap_pct = (resistance_level - current_price) / resistance_level
+        if gap_pct <= threshold:
+            return {
+                "recommendation": "Sell",
+                "recommendation_price_low": resistance_level * 0.99,
+                "recommendation_price_high": resistance_level,
+            }
+
+    return {"recommendation": "Wait"}

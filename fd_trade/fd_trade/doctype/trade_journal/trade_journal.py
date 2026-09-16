@@ -50,8 +50,11 @@ class TradeJournal(Document):
 
     def calculate_risk_metrics(self):
         """Calculate risk amount, suggested lot, target price suggestions,
-        dan validasi stop loss."""
-        settings = frappe.get_single("Trading Account Settings")
+        dan validasi stop loss. Menggunakan risk_engine.py sebagai satu-satunya
+        sumber kebenaran, konsisten dengan Watchlist Signal -- lot yang
+        disarankan sudah mempertimbangkan max_per_stock_percent dan
+        max_exposure_percent, bukan cuma risk_per_trade_percent saja."""
+        from fd_trade.utils.risk_engine import calculate_position_sizing
 
         # Calculate risk per share
         risk_per_share = self.entry_price - self.stop_loss
@@ -59,13 +62,39 @@ class TradeJournal(Document):
         if risk_per_share <= 0:
             frappe.throw(_("Stop loss must be below entry price for long positions."))
 
-        # Calculate risk amount in rupiah
-        risk_rp = settings.modal_total * (settings.risk_per_trade_percent / 100)
-        self.risk_amount = risk_rp
+        # exclude_docname mencegah trade ini menghitung dirinya sendiri
+        # dobel sebagai "eksposur existing" saat sedang di-edit (bukan baru)
+        exclude_docname = None if self.is_new() else self.name
 
-        # Calculate suggested lot (rounded down to nearest 100 shares)
-        suggested_shares = int(risk_rp / risk_per_share)
-        self.suggested_lot = int(suggested_shares / 100)
+        sizing = calculate_position_sizing(
+            ticker=self.ticker,
+            current_price=self.entry_price,
+            risk_per_share=risk_per_share,
+            exclude_docname=exclude_docname,
+        )
+
+        if not sizing:
+            frappe.throw(_("Gagal menghitung risk sizing. Cek apakah Trading Account Settings sudah diisi Modal Total."))
+
+        risk_rp = sizing["risk_amount"]
+        self.risk_amount = risk_rp
+        self.suggested_lot = sizing["final_lot"]
+
+        # Transparan: kasih tahu kalau lot dibatasi bukan oleh risk murni,
+        # tapi oleh kuota per-saham/eksposur total -- supaya tidak
+        # membingungkan kenapa suggested_lot lebih kecil dari perkiraan
+        # berbasis risk_per_trade_percent saja.
+        if sizing["limiting_factor"] != "risk" and sizing["final_lot"] < sizing["lot_by_risk"]:
+            factor_label = {
+                "max_per_stock": _("batas maksimal per saham"),
+                "max_exposure": _("batas maksimal eksposur portofolio"),
+            }.get(sizing["limiting_factor"], sizing["limiting_factor"])
+            frappe.msgprint(
+                _("Suggested lot dibatasi oleh {0} ({1} lot), bukan murni dari risk per trade ({2} lot).").format(
+                    factor_label, sizing["final_lot"], sizing["lot_by_risk"]
+                ),
+                indicator="orange"
+            )
 
         # Warn if actual position exceeds suggested risk
         if self.position_lot:

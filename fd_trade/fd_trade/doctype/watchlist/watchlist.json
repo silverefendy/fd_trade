@@ -15,6 +15,7 @@
   "column_break_ohlc",
   "low_price",
   "close_price",
+  "klasifikasi_section",
   "tier",
   "stock_group",
   "sector",
@@ -48,8 +49,7 @@
   {
    "fieldname": "ohlc_section",
    "fieldtype": "Section Break",
-   "label": "Open/High/Low/Close (Hari Terakhir)",
-   "collapsible": 1
+   "label": "Open/High/Low/Close (Hari Terakhir)"
   },
   {
    "fieldname": "open_price",
@@ -78,6 +78,11 @@
    "fieldtype": "Currency",
    "label": "Close",
    "read_only": 1
+  },
+  {
+   "fieldname": "klasifikasi_section",
+   "fieldtype": "Section Break",
+   "label": "Klasifikasi & Catatan"
   },
   {
    "fieldname": "tier",
