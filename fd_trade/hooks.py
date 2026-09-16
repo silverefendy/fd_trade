@@ -63,6 +63,9 @@ scheduler_events = {
         "1-59/15 9-16 * * 1-5": [
             "fd_trade.tasks.refresh_all_watchlist"
         ],
+        "3-59/30 9-16 * * 1-5": [
+            "fd_trade.tasks.refresh_ihsg_trend"
+        ],
         "2-59/30 9-16 * * 1-5": [
             "fd_trade.tasks.refresh_open_trades_sr"
         ],

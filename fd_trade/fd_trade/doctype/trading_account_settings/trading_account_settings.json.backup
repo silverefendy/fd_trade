@@ -16,13 +16,6 @@
   "max_per_stock_percent",
   "max_sektor_percent",
   "max_consecutive_losses",
-  "ihsg_section",
-  "ihsg_current_price",
-  "ihsg_trend",
-  "ihsg_column_break",
-  "ihsg_ma20",
-  "ihsg_ma50",
-  "ihsg_last_updated",
   "telegram_section",
   "telegram_bot_token",
   "telegram_chat_id",
@@ -88,47 +81,6 @@
    "fieldtype": "Int",
    "label": "Max Consecutive Losses",
    "default": "3"
-  },
-  {
-   "fieldname": "ihsg_section",
-   "fieldtype": "Section Break",
-   "label": "IHSG (Market Trend Setter, Auto)",
-   "collapsible": 1
-  },
-  {
-   "fieldname": "ihsg_current_price",
-   "fieldtype": "Float",
-   "label": "IHSG Current",
-   "read_only": 1
-  },
-  {
-   "fieldname": "ihsg_trend",
-   "fieldtype": "Select",
-   "label": "IHSG Trend",
-   "options": "Bullish Kuat\nBullish Lemah\nSideways\nBearish Lemah\nBearish Kuat",
-   "read_only": 1
-  },
-  {
-   "fieldname": "ihsg_column_break",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "ihsg_ma20",
-   "fieldtype": "Float",
-   "label": "IHSG MA20",
-   "read_only": 1
-  },
-  {
-   "fieldname": "ihsg_ma50",
-   "fieldtype": "Float",
-   "label": "IHSG MA50",
-   "read_only": 1
-  },
-  {
-   "fieldname": "ihsg_last_updated",
-   "fieldtype": "Datetime",
-   "label": "IHSG Last Updated",
-   "read_only": 1
   },
   {
    "fieldname": "telegram_section",

@@ -11,21 +11,47 @@ frappe.listview_settings["Watchlist"] = {
             if (!value) return "";
             return `<span style="color: #d32f2f;">${format_currency(value)}</span>`;
         },
+        current_price: (value, df, doc) => {
+            if (!value) return "";
+            const threshold_pct = 1;
+            const levels = [
+                { field: "support_level", color: "#c62828" },
+                { field: "support_level_2", color: "#ef9a9a" },
+                { field: "resistance_level", color: "#2e7d32" },
+                { field: "resistance_level_2", color: "#81c784" },
+            ];
+            let closest_color = null;
+            let closest_diff = Infinity;
+            levels.forEach((l) => {
+                const lvl_value = doc[l.field];
+                if (lvl_value) {
+                    const diff_pct = Math.abs(value - lvl_value) / lvl_value * 100;
+                    if (diff_pct <= threshold_pct && diff_pct < closest_diff) {
+                        closest_diff = diff_pct;
+                        closest_color = l.color;
+                    }
+                }
+            });
+            const style = closest_color
+                ? `color: ${closest_color}; font-weight: 700;`
+                : "";
+            return `<span style="${style}">${format_currency(value)}</span>`;
+        },
         support_level: (value) => {
             if (!value) return "";
-            return `<span style="color: #388e3c;">${format_currency(value)}</span>`;
+            return `<span style="color: #c62828;">${format_currency(value)}</span>`;
         },
         support_level_2: (value) => {
             if (!value) return "";
-            return `<span style="color: #388e3c;">${format_currency(value)}</span>`;
+            return `<span style="color: #ef9a9a;">${format_currency(value)}</span>`;
         },
         resistance_level: (value) => {
             if (!value) return "";
-            return `<span style="color: #d32f2f;">${format_currency(value)}</span>`;
+            return `<span style="color: #2e7d32;">${format_currency(value)}</span>`;
         },
         resistance_level_2: (value) => {
             if (!value) return "";
-            return `<span style="color: #d32f2f;">${format_currency(value)}</span>`;
+            return `<span style="color: #81c784;">${format_currency(value)}</span>`;
         },
 
         // === Kategori: badge dengan warna pastel/muted (bukan warna terang),
@@ -50,6 +76,19 @@ frappe.listview_settings["Watchlist"] = {
             return `<span style="background-color: ${bg}; color: #333; padding: 2px 8px; border-radius: 3px; font-size: 11px; white-space: nowrap;">${value}</span>`;
         },
 
+        trend_status: (value) => {
+            if (!value) return "";
+            const colors = {
+                "Bullish Kuat": "#2e7d32",
+                "Bullish Lemah": "#81c784",
+                "Sideways": "#9e9e9e",
+                "Bearish Lemah": "#e57373",
+                "Bearish Kuat": "#c62828",
+            };
+            const bg = colors[value] || "#e0e0e0";
+            return `<span style="background-color: ${bg}; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px; white-space: nowrap;">${value}</span>`;
+        },
+
         tier: (value) => {
             if (!value) return "";
             const tier_colors = { "A": "#c8e6c9", "B": "#fff9c4", "C": "#e0e0e0" };
@@ -72,5 +111,50 @@ frappe.listview_settings["Watchlist"] = {
             const bg = palette[Math.abs(hash) % palette.length];
             return `<span style="background-color: ${bg}; color: #333; padding: 2px 8px; border-radius: 3px; font-size: 11px; white-space: nowrap;">${value}</span>`;
         },
+    },
+
+    onload(listview) {
+        listview.page.add_inner_button("Refresh Semua Harga", () => {
+            frappe.call({
+                method: "fd_trade.tasks.refresh_all_watchlist_now",
+                freeze: true,
+                freeze_message: "Mengambil harga terbaru untuk semua ticker...",
+                callback: (r) => {
+                    listview.refresh();
+                    frappe.show_alert({
+                        message: "Semua harga berhasil di-refresh. Ingat: data yfinance delay 15-20 menit.",
+                        indicator: "green"
+                    });
+                }
+            });
+        });
+
+        const style_id = "fd-trade-watchlist-column-width";
+        if (document.getElementById(style_id)) return;
+
+        const style = document.createElement("style");
+        style.id = style_id;
+        style.innerHTML = `
+            .list-row-col[data-fieldname="ticker"] {
+                max-width: 90px;
+                min-width: 90px;
+            }
+            .list-row-col[data-fieldname="tier"] {
+                max-width: 70px;
+                min-width: 70px;
+            }
+            .list-row-col[data-fieldname="current_price"],
+            .list-row-col[data-fieldname="high_price"],
+            .list-row-col[data-fieldname="low_price"] {
+                max-width: 130px;
+                min-width: 130px;
+                text-align: right;
+            }
+            .list-row-col[data-fieldname="last_updated"] {
+                max-width: 160px;
+                min-width: 160px;
+            }
+        `;
+        document.head.appendChild(style);
     }
 };

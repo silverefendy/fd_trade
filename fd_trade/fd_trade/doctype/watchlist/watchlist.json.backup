@@ -26,7 +26,6 @@
   "support_level_2",
   "resistance_level_2",
   "sr_details",
-  "trend_status",
   "last_updated"
  ],
  "fields": [
@@ -150,14 +149,6 @@
    "fieldtype": "Small Text",
    "label": "S/R Details (Auto)",
    "read_only": 1
-  },
-  {
-   "fieldname": "trend_status",
-   "fieldtype": "Select",
-   "label": "Trend",
-   "options": "Bullish Kuat\nBullish Lemah\nSideways\nBearish Lemah\nBearish Kuat",
-   "read_only": 1,
-   "description": "Klasifikasi kondisi teknikal saat ini berdasarkan posisi MA20 vs MA50 dan harga saat ini. Bukan prediksi harga masa depan -- auto-update saat fetch data."
   },
   {
    "fieldname": "last_updated",

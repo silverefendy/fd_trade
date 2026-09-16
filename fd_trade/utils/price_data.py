@@ -22,7 +22,7 @@ def get_current_price(ticker):
     """
     try:
         # Append .JK suffix for IDX tickers
-        full_ticker = f"{ticker}.JK"
+        full_ticker = ticker if ticker.startswith("^") else f"{ticker}.JK"
 
         # Fetch data
         stock = yf.Ticker(full_ticker)
@@ -48,7 +48,7 @@ def get_current_ohlc(ticker):
         dict dengan keys: open, high, low, close -- atau None jika gagal.
     """
     try:
-        full_ticker = f"{ticker}.JK"
+        full_ticker = ticker if ticker.startswith("^") else f"{ticker}.JK"
         stock = yf.Ticker(full_ticker)
         hist = stock.history(period="1d")
 
@@ -79,7 +79,7 @@ def get_support_resistance(ticker):
         resistance_level_2, details (str) -- atau None jika data tidak cukup.
     """
     try:
-        full_ticker = f"{ticker}.JK"
+        full_ticker = ticker if ticker.startswith("^") else f"{ticker}.JK"
         stock = yf.Ticker(full_ticker)
         hist = stock.history(period="6mo")
 
@@ -146,12 +146,30 @@ def get_support_resistance(ticker):
         if ma200:
             detail_lines.append(f"MA200: Rp{ma200:,.0f}")
 
+        # Trend classification (5 kategori) berdasarkan selisih MA20 vs MA50,
+        # dikonfirmasi posisi current_price terhadap MA20. Ini deskripsi
+        # kondisi teknikal SAAT INI, bukan prediksi harga masa depan.
+        trend = None
+        if ma20 and ma50:
+            ma_gap_pct = (ma20 - ma50) / ma50 * 100
+            price_above_ma20 = current_price > ma20
+
+            if ma_gap_pct > 2:
+                trend = "Bullish Kuat" if price_above_ma20 else "Bullish Lemah"
+            elif ma_gap_pct < -2:
+                trend = "Bearish Kuat" if not price_above_ma20 else "Bearish Lemah"
+            else:
+                trend = "Sideways"
+
         return {
             "support_level": support_level,
             "support_level_2": support_level_2,
             "resistance_level": resistance_level,
             "resistance_level_2": resistance_level_2,
             "details": "\n".join(detail_lines),
+            "trend": trend,
+            "ma20": ma20,
+            "ma50": ma50,
         }
 
     except Exception as e:

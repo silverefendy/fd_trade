@@ -365,3 +365,43 @@ def refresh_open_trades_sr():
 
     except Exception as e:
         frappe.log_error(f"refresh_open_trades_sr failed: {e}", "FD-Trade Scheduled Tasks")
+
+
+@frappe.whitelist()
+def refresh_all_watchlist_now():
+    """Wrapper whitelisted supaya refresh_all_watchlist() bisa dipanggil
+    manual dari tombol UI List View, bukan cuma dari scheduler."""
+    refresh_all_watchlist()
+    return {"status": "done"}
+
+
+def refresh_ihsg_trend():
+    """Update trend IHSG (^JKSE) sebagai acuan kondisi market secara umum.
+    Disimpan di Trading Account Settings (Single), field ihsg_*.
+    Terpisah dari refresh_all_watchlist supaya tidak saling mengganggu."""
+    from fd_trade.utils.price_data import get_current_price, get_support_resistance
+
+    try:
+        price = get_current_price("^JKSE")
+        result = get_support_resistance("^JKSE")
+
+        settings = frappe.get_single("Trading Account Settings")
+        if price is not None:
+            settings.ihsg_current_price = price
+        if result:
+            settings.ihsg_trend = result.get("trend")
+            settings.ihsg_ma20 = result.get("ma20")
+            settings.ihsg_ma50 = result.get("ma50")
+        settings.ihsg_last_updated = frappe.utils.now()
+        settings.save(ignore_permissions=True)
+        frappe.db.commit()
+
+    except Exception as e:
+        frappe.log_error(f"refresh_ihsg_trend failed: {e}", "FD-Trade IHSG")
+
+
+@frappe.whitelist()
+def refresh_ihsg_trend_now():
+    """Wrapper whitelisted untuk dipanggil manual dari tombol UI."""
+    refresh_ihsg_trend()
+    return {"status": "done"}

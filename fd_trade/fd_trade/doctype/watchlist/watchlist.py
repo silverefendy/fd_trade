@@ -56,6 +56,7 @@ class Watchlist(Document):
             self.resistance_level = sr_result["resistance_level"]
             self.resistance_level_2 = sr_result["resistance_level_2"]
             self.sr_details = sr_result["details"]
+            self.trend_status = sr_result.get("trend")
 
 
 @frappe.whitelist()
@@ -88,6 +89,7 @@ def fetch_support_resistance(docname):
     doc.resistance_level = result["resistance_level"]
     doc.resistance_level_2 = result["resistance_level_2"]
     doc.sr_details = result["details"]
+    doc.trend_status = result.get("trend")
     doc.save()
 
     return result
