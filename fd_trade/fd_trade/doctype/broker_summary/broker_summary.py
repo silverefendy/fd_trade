@@ -32,11 +32,13 @@ class BrokerSummary(Document):
             insight = "Netral / tidak ada distribusi atau akumulasi signifikan"
 
         # Compare price to average price
+        # BUG #3 FIX (17 Sep 2026): "\\n" sebelumnya backslash literal, bukan
+        # newline asli -- diganti f-string dengan "\n" asli.
         if self.price and self.average_price:
             if self.price < self.average_price:
-                insight += "\\nHarga saat ini di bawah rata-rata broker (Rp" + str(self.average_price) + ")"
+                insight += f"\nHarga saat ini di bawah rata-rata broker (Rp{self.average_price})"
             elif self.price > self.average_price:
-                insight += "\\nHarga saat ini di atas rata-rata broker (Rp" + str(self.average_price) + ")"
+                insight += f"\nHarga saat ini di atas rata-rata broker (Rp{self.average_price})"
 
         self.insight_notes = insight
 

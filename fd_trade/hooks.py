@@ -98,11 +98,17 @@ scheduler_events = {
 }
 
 # Doc Events
-doc_events = {
-    "Trade Journal": {
-        "on_update": "fd_trade.fd_trade.doctype.trade_journal.trade_journal.notify_on_close"
-    }
-}
+# BUG #1 FIX (17 Sep 2026): dihapus karena trade_journal.py sudah punya
+# method on_update() sendiri yang memanggil notify_on_close() -- kalau
+# doc_events ini tetap ada, notifikasi Telegram "Trade Closed" akan
+# terkirim DUA KALI setiap kali dokumen di-save. Pilih satu jalur saja;
+# di sini kita pertahankan method controller karena lebih dekat dengan
+# logic-nya (mudah ditelusuri saat baca trade_journal.py).
+# doc_events = {
+#     "Trade Journal": {
+#         "on_update": "fd_trade.fd_trade.doctype.trade_journal.trade_journal.notify_on_close"
+#     }
+# }
 
 # Permissions
 # permission_query_conditions = {}

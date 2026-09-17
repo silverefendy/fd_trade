@@ -17,6 +17,7 @@
   "recommendation_price_low",
   "recommendation_price_high",
   "stop_loss",
+  "sizing_limiting_factor",
   "risk_amount",
   "risk_per_share",
   "suggested_lot",
@@ -94,6 +95,14 @@
    "label": "Stop Loss (Buy)",
    "read_only": 1,
    "description": "Level invalidasi teknikal (support kedua) untuk sinyal Buy. Kosong untuk Sell/Wait/Avoid."
+  },
+  {
+   "fieldname": "sizing_limiting_factor",
+   "fieldtype": "Select",
+   "label": "Sizing Limited By",
+   "options": "risk\nmax_per_stock\nmax_exposure",
+   "read_only": 1,
+   "description": "Faktor yang membatasi suggested_lot -- risk (murni risk per trade), max_per_stock, atau max_exposure. Diisi otomatis dari risk_engine.py, transparansi kenapa lot lebih kecil dari perkiraan risk murni."
   },
   {
    "fieldname": "risk_amount",

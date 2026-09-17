@@ -255,7 +255,16 @@ def notify_on_close(doc, method=None):
     from fd_trade.utils.telegram import send_telegram_notification
 
     followed_status = "Yes" if doc.followed_system else "No"
-    message = "Trade Closed\\nTicker: " + doc.ticker + "\\nResult R: " + str(doc.result_r) + "R\\nFollowed System: " + followed_status
+    # BUG #3 FIX (17 Sep 2026): sebelumnya pakai "\\n" (backslash literal + n
+    # sebagai teks, bukan newline asli), jadi tampil satu baris panjang di
+    # Telegram. Diganti f-string dengan "\n" asli, konsisten dengan pola
+    # yang sudah benar di tasks.py (daily_review_notification, dst).
+    message = (
+        f"Trade Closed\n"
+        f"Ticker: {doc.ticker}\n"
+        f"Result R: {doc.result_r}R\n"
+        f"Followed System: {followed_status}"
+    )
 
     send_telegram_notification(message)
 
