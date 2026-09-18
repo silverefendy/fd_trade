@@ -2,6 +2,7 @@
 # See license.txt
 
 from inspect import signature
+from unittest.mock import patch
 
 from fd_trade.fd_trade.doctype.watchlist_signal.watchlist_signal import (
 	_build_recommendation_change_message,
@@ -65,11 +66,16 @@ class IntegrationTestWatchlistSignal(IntegrationTestCase):
 		from fd_trade.fd_trade.doctype.watchlist_signal import watchlist_signal
 		settings = frappe._dict({"proximity_threshold_pct": 3, "volume_high_ratio": 1.5, "volume_low_ratio": 0.5, "ihsg_trend": "Sideways"})
 		signal_doc = frappe._dict({"insert": lambda ignore_permissions=True: None})
+		calculate.side_effect = [
+			{"recommendation": "Buy", "recommendation_price_low": 100, "recommendation_price_high": 101, "stop_loss": 95},
+			{"recommendation": "Sell", "recommendation_price_low": 110, "recommendation_price_high": 110},
+		]
 		with patch.object(frappe, "get_single", return_value=settings), \
-			patch.object(frappe, "get_all", side_effect=[[], [frappe._dict({"recommendation": "Wait"})]]), \
+			patch.object(frappe, "get_all", side_effect=[[], [], [], [frappe._dict({"recommendation": "Buy"})]]), \
 			patch.object(frappe, "get_doc", return_value=signal_doc), \
 			patch.object(frappe.db, "commit"), \
 			patch.object(frappe, "log_error"):
 			watchlist_signal.create_signal("WL-BBCA", "BBCA", 101, "Bullish Lemah", 100, None, 110)
+			watchlist_signal.create_signal("WL-BBCA", "BBCA", 109, "Sideways", 100, None, 110)
 		telegram.assert_called_once()
-		self.assertIn("BBCA Wait -> Buy", telegram.call_args.args[0])
+		self.assertIn("BBCA Buy -> Sell", telegram.call_args.args[0])

@@ -25,6 +25,8 @@ class TestPriceData(unittest.TestCase):
     def test_volume_categories_and_invalid_history(self):
         class Series:
             def __init__(self, values): self.values = values
+            @property
+            def empty(self): return not self.values
             def dropna(self): return self
             def __len__(self): return len(self.values)
             def __getitem__(self, key): return Series(self.values[key]) if isinstance(key, slice) else self.values[key]

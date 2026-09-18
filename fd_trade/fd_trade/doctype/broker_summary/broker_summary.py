@@ -50,8 +50,14 @@ def import_from_excel(docname, file_url, ticker):
 
     doc = frappe.get_doc("Broker Summary", docname)
 
-    # Get file path from file URL
-    file_path = frappe.get_site_path(frappe.utils.get_url_path(file_url).lstrip("/"))
+    # Resolve attachment URL without relying on removed frappe.utils.get_url_path.
+    # Public files live under public/files; private files under private/files.
+    clean_url = (file_url or "").split("?", 1)[0]
+    if clean_url.startswith("/private/files/"):
+        file_path = frappe.get_site_path("private", "files", clean_url[len("/private/files/"):])
+    else:
+        relative_path = clean_url[len("/files/"):] if clean_url.startswith("/files/") else clean_url.lstrip("/")
+        file_path = frappe.get_site_path("public", "files", relative_path)
 
     if not os.path.exists(file_path):
         frappe.throw(_("File not found: {0}").format(file_path))

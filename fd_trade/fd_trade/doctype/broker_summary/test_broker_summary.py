@@ -39,7 +39,6 @@ class TestBrokerSummary(FDTradeTestCase):
             doc = MagicDoc()
             with patch.object(broker_summary.frappe, "get_doc", return_value=doc), \
                     patch.object(broker_summary.frappe, "get_site_path", return_value=str(filename)), \
-                    patch.object(broker_summary.frappe.utils, "get_url_path", return_value="/broker.xlsx"), \
                     patch.object(broker_summary.frappe, "msgprint"):
                 result = broker_summary.import_from_excel("BROKER-TEST", "/broker.xlsx", "BBCA")
             self.assertTrue(result["success"])
