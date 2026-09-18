@@ -70,8 +70,14 @@ class IntegrationTestWatchlistSignal(IntegrationTestCase):
 			{"recommendation": "Buy", "recommendation_price_low": 100, "recommendation_price_high": 101, "stop_loss": 95},
 			{"recommendation": "Sell", "recommendation_price_low": 110, "recommendation_price_high": 110},
 		]
+		previous_queries = {"count": 0}
+		def get_all_for_signal(doctype, **kwargs):
+			if doctype == "IHSG Signal":
+				return []
+			previous_queries["count"] += 1
+			return [] if previous_queries["count"] == 1 else [frappe._dict({"recommendation": "Buy"})]
 		with patch.object(frappe, "get_single", return_value=settings), \
-			patch.object(frappe, "get_all", side_effect=[[], [], [], [frappe._dict({"recommendation": "Buy"})]]), \
+			patch.object(frappe, "get_all", side_effect=get_all_for_signal) as get_all, \
 			patch.object(frappe, "get_doc", return_value=signal_doc), \
 			patch.object(frappe.db, "commit"), \
 			patch.object(frappe, "log_error"):
@@ -79,3 +85,5 @@ class IntegrationTestWatchlistSignal(IntegrationTestCase):
 			watchlist_signal.create_signal("WL-BBCA", "BBCA", 109, "Sideways", 100, None, 110)
 		telegram.assert_called_once()
 		self.assertIn("BBCA Buy -> Sell", telegram.call_args.args[0])
+		self.assertEqual(previous_queries["count"], 2)
+		self.assertEqual(get_all.call_args_list[1].kwargs["filters"], {"ticker": "BBCA"})

@@ -30,8 +30,9 @@ class TestTasks(FDTradeTestCase):
         telegram.assert_not_called()
 
     @patch("fd_trade.tasks.send_telegram_notification")
-    @patch("fd_trade.tasks.frappe.db.sql", return_value=[{"total_pnl": 0}])
-    def test_review_jobs_do_not_notify_when_limits_are_not_breached(self, sql, telegram):
+    def test_review_jobs_do_not_notify_when_limits_are_not_breached(self, telegram):
+        # Jangan mock global frappe.db.sql: get_single() memakai query internal
+        # dengan format berbeda dari query bisnis scheduled job.
         tasks.check_intraday_conditions()
         tasks.monthly_circuit_breaker_check()
         telegram.assert_not_called()
