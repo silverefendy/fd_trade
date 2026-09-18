@@ -7,6 +7,12 @@ import yfinance as yf
 import frappe
 
 
+PROXIMITY_THRESHOLD_PCT = 3.0
+VOLUME_HIGH_RATIO = 1.5
+VOLUME_LOW_RATIO = 0.5
+VOLUME_AVERAGE_DAYS = 20
+
+
 def get_current_price(ticker):
     """Fetch latest available price for an IDX ticker using yfinance.
 
@@ -68,15 +74,15 @@ def get_current_ohlc(ticker):
         return None
 
 def get_support_resistance(ticker):
-    """Hitung 2 level support & 2 level resistance terdekat, kombinasi
+    """Hitung 3 level support & 3 level resistance terdekat, kombinasi
     Swing High/Low + Moving Average.
 
     Menggunakan histori 6 bulan harian. Swing point dideteksi dengan window
     5 hari kiri-kanan (titik balik lokal). MA yang dipakai: MA20, MA50, MA200.
 
     Returns:
-        dict dengan keys: support_level, support_level_2, resistance_level,
-        resistance_level_2, details (str) -- atau None jika data tidak cukup.
+        dict dengan keys level S/R 1-3 dan details (str), atau None jika data
+        tidak cukup. Key level lama adalah alias langsung S1/R1.
     """
     try:
         full_ticker = ticker if ticker.startswith("^") else f"{ticker}.JK"
@@ -125,10 +131,15 @@ def get_support_resistance(ticker):
         # Resistance: urut dari yang PALING DEKAT (terendah) ke yang lebih jauh
         resistance_candidates = sorted(resistance_candidates)
 
-        support_level = support_candidates[0] if len(support_candidates) > 0 else 0
-        support_level_2 = support_candidates[1] if len(support_candidates) > 1 else 0
-        resistance_level = resistance_candidates[0] if len(resistance_candidates) > 0 else 0
-        resistance_level_2 = resistance_candidates[1] if len(resistance_candidates) > 1 else 0
+        support_levels = support_candidates[:3]
+        resistance_levels = resistance_candidates[:3]
+
+        support_level = support_levels[0] if len(support_levels) > 0 else None
+        support_level_2 = support_levels[1] if len(support_levels) > 1 else None
+        support_level_3 = support_levels[2] if len(support_levels) > 2 else None
+        resistance_level = resistance_levels[0] if len(resistance_levels) > 0 else None
+        resistance_level_2 = resistance_levels[1] if len(resistance_levels) > 1 else None
+        resistance_level_3 = resistance_levels[2] if len(resistance_levels) > 2 else None
 
         detail_lines = [f"Current Price: Rp{current_price:,.0f}"]
         if swing_lows:
@@ -168,8 +179,10 @@ def get_support_resistance(ticker):
         return {
             "support_level": round_to_tick(support_level),
             "support_level_2": round_to_tick(support_level_2),
+            "support_level_3": round_to_tick(support_level_3),
             "resistance_level": round_to_tick(resistance_level),
             "resistance_level_2": round_to_tick(resistance_level_2),
+            "resistance_level_3": round_to_tick(resistance_level_3),
             "details": "\n".join(detail_lines),
             "trend": trend,
             "ma20": ma20,
@@ -178,6 +191,90 @@ def get_support_resistance(ticker):
 
     except Exception as e:
         frappe.log_error(f"get_support_resistance failed for {ticker}: {e}", "FD-Trade Price Data")
+        return None
+
+
+def get_nearest_level(current_price, levels_dict, threshold_pct=PROXIMITY_THRESHOLD_PCT):
+    """Tentukan level S/R terdekat dari harga sekarang.
+
+    Return berisi nama field, harga level, jarak persen, dan kategori
+    proximity. Jika tidak ada level valid atau semuanya di luar threshold,
+    kategori dikembalikan sebagai ``di tengah range``.
+    """
+    if current_price is None or not levels_dict:
+        return {
+            "level_name": None, "level_price": None, "distance_pct": None,
+            "category": "di tengah range",
+        }
+
+    candidates = []
+    for name in ("support_level", "support_level_2", "support_level_3",
+                 "resistance_level", "resistance_level_2", "resistance_level_3"):
+        value = levels_dict.get(name)
+        if value is not None and value > 0:
+            distance_pct = abs(current_price - value) / value * 100
+            candidates.append((distance_pct, name, value))
+
+    if not candidates:
+        return {
+            "level_name": None, "level_price": None, "distance_pct": None,
+            "category": "di tengah range",
+        }
+
+    distance_pct, level_name, level_price = min(candidates, key=lambda item: item[0])
+    category = "di tengah range"
+    if distance_pct <= threshold_pct:
+        category = "mendekati support" if level_name.startswith("support") else "mendekati resistance"
+
+    return {
+        "level_name": level_name,
+        "level_price": round_to_tick(level_price),
+        "distance_pct": round(distance_pct, 2),
+        "category": category,
+    }
+
+
+def get_volume_confirmation(ticker, history=None):
+    """Validasi volume terakhir terhadap rata-rata volume 20 hari.
+
+    ``history`` dapat diisi dengan histori yang sudah di-fetch caller agar
+    tidak terjadi hit yfinance kedua untuk ticker yang sama.
+    """
+    try:
+        if history is None:
+            full_ticker = ticker if ticker.startswith("^") else f"{ticker}.JK"
+            history = yf.Ticker(full_ticker).history(period="6mo")
+
+        if history is None or "Volume" not in history or history.empty:
+            return None
+
+        volumes = history["Volume"].dropna()
+        if len(volumes) < 2:
+            return None
+
+        current_volume = float(volumes.iloc[-1])
+        baseline_values = volumes.iloc[-(VOLUME_AVERAGE_DAYS + 1):-1]
+        if baseline_values.empty:
+            return None
+        avg_volume = float(baseline_values.mean())
+        if avg_volume <= 0 or current_volume < 0:
+            return None
+
+        ratio = current_volume / avg_volume
+        if ratio > VOLUME_HIGH_RATIO:
+            status = "Volume Tinggi"
+        elif ratio < VOLUME_LOW_RATIO:
+            status = "Volume Rendah"
+        else:
+            status = "Volume Normal"
+
+        return {
+            "current_volume": current_volume,
+            "avg_volume_20d": avg_volume,
+            "volume_status": status,
+        }
+    except Exception as e:
+        frappe.log_error(f"get_volume_confirmation failed for {ticker}: {e}", "FD-Trade Volume")
         return None
 
 
@@ -202,7 +299,9 @@ def round_to_tick(price):
 
 
 def calculate_recommendation(ticker, current_price, trend, support_level, support_level_2,
-                              resistance_level):
+                              resistance_level, support_level_3=None,
+                              resistance_level_2=None, resistance_level_3=None,
+                              ihsg_trend=None, proximity=None, volume_status=None):
     """Rule-based recommendation (Fase 1) -- BUKAN prediksi harga, murni
     penerjemahan kondisi teknikal saat ini menjadi Buy/Wait/Sell/Avoid +
     entry zone + position sizing berbasis risk management yang sudah
@@ -219,7 +318,10 @@ def calculate_recommendation(ticker, current_price, trend, support_level, suppor
     threshold = 0.02  # 2%
 
     if trend == "Bearish Kuat":
-        return {"recommendation": "Avoid"}
+        result = {"recommendation": "Avoid"}
+        if ihsg_trend == "Bearish Kuat":
+            result["notes"] = "IHSG sedang Bearish Kuat -- pertimbangkan ekstra hati-hati / size lebih kecil untuk sinyal Buy manapun."
+        return result
 
     if support_level and current_price is not None and current_price >= support_level:
         gap_pct = (current_price - support_level) / support_level
@@ -241,19 +343,36 @@ def calculate_recommendation(ticker, current_price, trend, support_level, suppor
                         result["suggested_lot"] = sizing["final_lot"]
                         result["suggested_position_rp"] = sizing["suggested_position_rp"]
                         result["sizing_limiting_factor"] = sizing["limiting_factor"]
+            notes = []
+            if ihsg_trend == "Bearish Kuat":
+                notes.append("IHSG sedang Bearish Kuat -- pertimbangkan ekstra hati-hati / size lebih kecil untuk sinyal Buy manapun.")
+            elif ihsg_trend in ("Bullish Kuat", "Bullish Lemah"):
+                notes.append("Selaras dengan trend IHSG.")
+            if volume_status == "Volume Rendah":
+                notes.append("Volume Rendah: sinyal Buy dekat support perlu dikonfirmasi lebih hati-hati.")
+            if proximity:
+                result["proximity"] = proximity
+            if notes:
+                result["notes"] = " ".join(notes)
             return result
 
     if (resistance_level and current_price is not None and current_price <= resistance_level
             and trend != "Bullish Kuat"):
         gap_pct = (resistance_level - current_price) / resistance_level
         if gap_pct <= threshold:
-            return {
+            result = {
                 "recommendation": "Sell",
                 "recommendation_price_low": round_to_tick(resistance_level * 0.99),
                 "recommendation_price_high": round_to_tick(resistance_level),
             }
+            if proximity:
+                result["proximity"] = proximity
+            return result
 
-    return {"recommendation": "Wait"}
+    result = {"recommendation": "Wait"}
+    if proximity:
+        result["proximity"] = proximity
+    return result
 
 
 def get_pivot_points(ticker, period="daily"):
