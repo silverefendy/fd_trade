@@ -26,7 +26,16 @@
   "resistance_level",
   "support_level_2",
   "resistance_level_2",
+  "support_level_3",
+  "resistance_level_3",
   "sr_details",
+  "volume_proximity_section",
+  "current_volume",
+  "avg_volume_20d",
+  "volume_status",
+  "nearest_level_name",
+  "nearest_level_distance_pct",
+  "proximity_category",
   "trend_status",
   "last_updated",
   "signal_source"
@@ -160,10 +169,69 @@
    "hide_currency_symbol": "1"
   },
   {
+   "description": "Level support ketiga (paling jauh dari harga sekarang dibanding Support Level 2).",
+   "fieldname": "support_level_3",
+   "fieldtype": "Currency",
+   "label": "Support Level 3",
+   "read_only": 1,
+   "hide_currency_symbol": "1"
+  },
+  {
+   "description": "Level resistance ketiga (paling jauh dari harga sekarang dibanding Resistance Level 2).",
+   "fieldname": "resistance_level_3",
+   "fieldtype": "Currency",
+   "label": "Resistance Level 3",
+   "read_only": 1,
+   "hide_currency_symbol": "1"
+  },
+  {
    "description": "Kombinasi Swing High/Low (6 bulan) + Moving Average (MA20/50/200). Klik tombol 'Fetch Support/Resistance' untuk update.",
    "fieldname": "sr_details",
    "fieldtype": "Small Text",
    "label": "S/R Details (Auto)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "volume_proximity_section",
+   "fieldtype": "Section Break",
+   "label": "Volume & Proximity (Auto)"
+  },
+  {
+   "fieldname": "current_volume",
+   "fieldtype": "Float",
+   "label": "Current Volume",
+   "read_only": 1
+  },
+  {
+   "fieldname": "avg_volume_20d",
+   "fieldtype": "Float",
+   "label": "Average Volume 20D",
+   "read_only": 1
+  },
+  {
+   "fieldname": "volume_status",
+   "fieldtype": "Select",
+   "label": "Volume Status",
+   "options": "Volume Tinggi\nVolume Normal\nVolume Rendah",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nearest_level_name",
+   "fieldtype": "Data",
+   "label": "Level Terdekat",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nearest_level_distance_pct",
+   "fieldtype": "Percent",
+   "label": "Jarak Level Terdekat (%)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "proximity_category",
+   "fieldtype": "Select",
+   "label": "Proximity",
+   "options": "mendekati support\nmendekati resistance\ndi tengah range",
    "read_only": 1
   },
   {

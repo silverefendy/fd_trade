@@ -23,6 +23,8 @@
   "resistance_level",
   "support_level_2",
   "resistance_level_2",
+  "support_level_3",
+  "resistance_level_3",
   "sr_details",
   "position_lot",
   "suggested_lot",
@@ -149,6 +151,22 @@
    "label": "Resistance Level 2",
    "read_only": 1,
    "description": "Level resistance kedua (lebih jauh dari harga sekarang dibanding Resistance Level).",
+   "hide_currency_symbol": "1"
+  },
+  {
+   "fieldname": "support_level_3",
+   "fieldtype": "Currency",
+   "label": "Support Level 3",
+   "read_only": 1,
+   "description": "Level support ketiga (paling jauh dari harga sekarang dibanding Support Level 2).",
+   "hide_currency_symbol": "1"
+  },
+  {
+   "fieldname": "resistance_level_3",
+   "fieldtype": "Currency",
+   "label": "Resistance Level 3",
+   "read_only": 1,
+   "description": "Level resistance ketiga (paling jauh dari harga sekarang dibanding Resistance Level 2).",
    "hide_currency_symbol": "1"
   },
   {

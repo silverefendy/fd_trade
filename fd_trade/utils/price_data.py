@@ -234,7 +234,8 @@ def get_nearest_level(current_price, levels_dict, threshold_pct=PROXIMITY_THRESH
     }
 
 
-def get_volume_confirmation(ticker, history=None):
+def get_volume_confirmation(ticker, history=None, high_ratio=VOLUME_HIGH_RATIO,
+                            low_ratio=VOLUME_LOW_RATIO):
     """Validasi volume terakhir terhadap rata-rata volume 20 hari.
 
     ``history`` dapat diisi dengan histori yang sudah di-fetch caller agar
@@ -261,9 +262,9 @@ def get_volume_confirmation(ticker, history=None):
             return None
 
         ratio = current_volume / avg_volume
-        if ratio > VOLUME_HIGH_RATIO:
+        if ratio > high_ratio:
             status = "Volume Tinggi"
-        elif ratio < VOLUME_LOW_RATIO:
+        elif ratio < low_ratio:
             status = "Volume Rendah"
         else:
             status = "Volume Normal"

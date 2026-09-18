@@ -23,6 +23,10 @@
   "ihsg_ma20",
   "ihsg_ma50",
   "ihsg_last_updated",
+  "signal_thresholds_section",
+  "proximity_threshold_pct",
+  "volume_high_ratio",
+  "volume_low_ratio",
   "telegram_section",
   "telegram_bot_token",
   "telegram_chat_id",
@@ -130,6 +134,31 @@
    "fieldtype": "Datetime",
    "label": "IHSG Last Updated",
    "read_only": 1
+  },
+  {
+   "fieldname": "signal_thresholds_section",
+   "fieldtype": "Section Break",
+   "label": "Signal Thresholds (Advanced)",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "proximity_threshold_pct",
+   "fieldtype": "Percent",
+   "label": "Proximity Threshold (%)",
+   "default": "3.0",
+   "description": "Jarak maksimum harga dari level support/resistance agar dikategorikan mendekati level."
+  },
+  {
+   "fieldname": "volume_high_ratio",
+   "fieldtype": "Float",
+   "label": "Volume Tinggi Ratio",
+   "default": "1.5"
+  },
+  {
+   "fieldname": "volume_low_ratio",
+   "fieldtype": "Float",
+   "label": "Volume Rendah Ratio",
+   "default": "0.5"
   },
   {
    "fieldname": "telegram_section",
