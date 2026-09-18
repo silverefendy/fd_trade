@@ -33,6 +33,20 @@ frappe.listview_settings["Watchlist Signal"] = {
             return `<span style="background-color: ${bg}; color: white; padding: 2px 8px; border-radius: 3px; white-space: nowrap;">${value}</span>`;
         },
 
+        proximity_category: (value) => {
+            if (!value) return "";
+            const colors = {"mendekati support": "#c62828", "mendekati resistance": "#2e7d32", "di tengah range": "#9e9e9e"};
+            const bg = colors[value] || "#9e9e9e";
+            return `<span style="background-color: ${bg}; color: white; padding: 2px 8px; border-radius: 3px;">${value}</span>`;
+        },
+
+        volume_status: (value) => {
+            if (!value) return "";
+            const colors = {"Volume Tinggi": "#2e7d32", "Volume Normal": "#9e9e9e", "Volume Rendah": "#c62828"};
+            const bg = colors[value] || "#9e9e9e";
+            return `<span style="background-color: ${bg}; color: white; padding: 2px 8px; border-radius: 3px;">${value}</span>`;
+        },
+
         current_price: (value, df, doc) => {
             if (!value) return "";
             let color = "";

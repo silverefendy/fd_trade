@@ -72,3 +72,5 @@ Ditambah `doc_events`: `Trade Journal.on_update → notify_on_close` (perhatikan
 ## 7. Dependency Eksternal & Risiko
 - **yfinance**: gratis tapi tidak resmi didukung untuk data historis IDX secara stabil jangka panjang — Yahoo Finance beberapa kali mengubah struktur data tanpa pemberitahuan. Risiko: `get_current_price`/`get_support_resistance` bisa berhenti bekerja sewaktu-waktu tanpa perubahan kode di sisi Anda.
 - **Tidak ada rate-limiting/backoff** pada pemanggilan yfinance di `check_price_alerts` — kalau jumlah alert aktif banyak, loop memanggil yfinance satu-per-satu tiap 15 menit bisa kena throttle/block dari Yahoo.
+- Update September 2026: Support/Resistance sekarang menyediakan S1-S3 dan R1-R3 dari swing high/low + MA20/50/200. Proximity memakai default 3%, sedangkan validasi volume memakai rasio tinggi 1,5x dan rendah 0,5x terhadap rata-rata 20 hari. Semua sumber harga otomatis tetap yfinance; tidak ada scraping broker, Stockbit, atau IDX.
+- Ditambahkan histori IHSG Signal dengan market regime Risk-On, Neutral, Risk-Off, atau Avoid New Entry. Regime hanya konteks informasi dan tidak mengubah rekomendasi saham secara otomatis.

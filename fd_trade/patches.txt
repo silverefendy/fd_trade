@@ -1,0 +1,1 @@
+fd_trade.patches.v1_0_add_signal_fields

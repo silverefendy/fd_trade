@@ -33,19 +33,20 @@ fixtures = [
         "filters": [["doc_type", "in", [
             "Watchlist", "Watchlist Signal", "Trade Journal",
             "Price Alert", "Broker Summary", "Broker Summary Detail",
-            "Signal Source", "Trading Account Settings"
+            "Signal Source", "Trading Account Settings", "IHSG Signal"
         ]]]
     },
     {
         "doctype": "List View Settings",
-        "filters": [["name", "in", ["Watchlist", "Watchlist Signal", "Trade Journal", "Price Alert", "Broker Summary", "Signal Source"]]]
+        "filters": [["name", "in", ["Watchlist", "Watchlist Signal", "Trade Journal", "Price Alert", "Broker Summary", "Signal Source", "IHSG Signal"]]]
     }
 ]
 
 # List View JS
 doctype_list_js = {
     "Watchlist": "public/js/watchlist_list.js",
-    "Watchlist Signal": "public/js/watchlist_signal_list.js"
+    "Watchlist Signal": "public/js/watchlist_signal_list.js",
+    "IHSG Signal": "public/js/ihsg_signal_list.js"
 }
 
 # Includes in JS
@@ -86,7 +87,8 @@ scheduler_events = {
             "fd_trade.tasks.daily_review_notification"
         ],
         "0 17 * * 1-5": [
-            "fd_trade.tasks.cleanup_old_watchlist_signals"
+            "fd_trade.tasks.cleanup_old_watchlist_signals",
+            "fd_trade.tasks.cleanup_old_ihsg_signals"
         ],
         "0 17 * * 5": [
             "fd_trade.tasks.weekly_review_notification"
