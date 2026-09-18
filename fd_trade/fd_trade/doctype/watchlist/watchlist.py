@@ -53,8 +53,10 @@ class Watchlist(Document):
         if sr_result:
             self.support_level = sr_result["support_level"]
             self.support_level_2 = sr_result["support_level_2"]
+            self.support_level_3 = sr_result["support_level_3"]
             self.resistance_level = sr_result["resistance_level"]
             self.resistance_level_2 = sr_result["resistance_level_2"]
+            self.resistance_level_3 = sr_result["resistance_level_3"]
             self.sr_details = sr_result["details"]
             self.trend_status = sr_result.get("trend")
 
@@ -67,6 +69,9 @@ class Watchlist(Document):
             support_level=self.support_level,
             support_level_2=self.support_level_2,
             resistance_level=self.resistance_level,
+            support_level_3=self.support_level_3,
+            resistance_level_2=self.resistance_level_2,
+            resistance_level_3=self.resistance_level_3,
         )
 
 
@@ -97,8 +102,10 @@ def fetch_support_resistance(docname):
 
     doc.support_level = result["support_level"]
     doc.support_level_2 = result["support_level_2"]
+    doc.support_level_3 = result["support_level_3"]
     doc.resistance_level = result["resistance_level"]
     doc.resistance_level_2 = result["resistance_level_2"]
+    doc.resistance_level_3 = result["resistance_level_3"]
     doc.sr_details = result["details"]
     doc.trend_status = result.get("trend")
     doc.save()
@@ -112,6 +119,9 @@ def fetch_support_resistance(docname):
         support_level=doc.support_level,
         support_level_2=doc.support_level_2,
         resistance_level=doc.resistance_level,
+        support_level_3=doc.support_level_3,
+        resistance_level_2=doc.resistance_level_2,
+        resistance_level_3=doc.resistance_level_3,
     )
 
     return result

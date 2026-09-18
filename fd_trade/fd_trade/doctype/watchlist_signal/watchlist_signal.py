@@ -14,7 +14,9 @@ class WatchlistSignal(Document):
 
 
 def create_signal(watchlist_name, ticker, current_price, trend_status,
-                   support_level, support_level_2, resistance_level):
+                   support_level, support_level_2, resistance_level,
+                   support_level_3=None, resistance_level_2=None,
+                   resistance_level_3=None):
     """Hitung recommendation (Fase 1, rule-based) dan simpan sebagai record
     baru di Watchlist Signal -- dipanggil dari watchlist.py (before_save,
     fetch manual) dan tasks.py (refresh_all_watchlist scheduler).
@@ -46,6 +48,9 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
             support_level=support_level,
             support_level_2=support_level_2,
             resistance_level=resistance_level,
+            support_level_3=support_level_3,
+            resistance_level_2=resistance_level_2,
+            resistance_level_3=resistance_level_3,
         )
 
         signal = frappe.get_doc({

@@ -45,7 +45,11 @@ class TradeJournal(Document):
         result = get_support_resistance(self.ticker)
         if result:
             self.support_level = result["support_level"]
+            self.support_level_2 = result["support_level_2"]
+            self.support_level_3 = result["support_level_3"]
             self.resistance_level = result["resistance_level"]
+            self.resistance_level_2 = result["resistance_level_2"]
+            self.resistance_level_3 = result["resistance_level_3"]
             self.sr_details = result["details"]
 
     def calculate_risk_metrics(self):
@@ -282,8 +286,10 @@ def fetch_support_resistance(docname):
 
     doc.support_level = result["support_level"]
     doc.support_level_2 = result["support_level_2"]
+    doc.support_level_3 = result["support_level_3"]
     doc.resistance_level = result["resistance_level"]
     doc.resistance_level_2 = result["resistance_level_2"]
+    doc.resistance_level_3 = result["resistance_level_3"]
     doc.sr_details = result["details"]
     doc.save()
 

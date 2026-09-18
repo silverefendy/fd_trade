@@ -307,8 +307,10 @@ def refresh_all_watchlist():
                 if sr_result:
                     values["support_level"] = sr_result["support_level"]
                     values["support_level_2"] = sr_result["support_level_2"]
+                    values["support_level_3"] = sr_result["support_level_3"]
                     values["resistance_level"] = sr_result["resistance_level"]
                     values["resistance_level_2"] = sr_result["resistance_level_2"]
+                    values["resistance_level_3"] = sr_result["resistance_level_3"]
                     values["sr_details"] = sr_result["details"]
                     values["trend_status"] = sr_result.get("trend")
 
@@ -326,6 +328,9 @@ def refresh_all_watchlist():
                         support_level=values.get("support_level"),
                         support_level_2=values.get("support_level_2"),
                         resistance_level=values.get("resistance_level"),
+                        support_level_3=values.get("support_level_3"),
+                        resistance_level_2=values.get("resistance_level_2"),
+                        resistance_level_3=values.get("resistance_level_3"),
                     )
                 else:
                     skipped += 1
@@ -376,8 +381,10 @@ def refresh_open_trades_sr():
                     frappe.db.set_value("Trade Journal", row.name, {
                         "support_level": result["support_level"],
                         "support_level_2": result["support_level_2"],
+                        "support_level_3": result["support_level_3"],
                         "resistance_level": result["resistance_level"],
                         "resistance_level_2": result["resistance_level_2"],
+                        "resistance_level_3": result["resistance_level_3"],
                         "sr_details": result["details"],
                     })
                     updated += 1
