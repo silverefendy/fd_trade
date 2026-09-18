@@ -187,14 +187,6 @@ def get_support_resistance(ticker):
             "trend": trend,
             "ma20": ma20,
             "ma50": ma50,
-            # BUG #10 FIX (19 Sep 2026): sertakan raw history 6 bulan yang
-            # sudah di-fetch di sini, supaya get_volume_confirmation() bisa
-            # REUSE data ini alih-alih fetch ulang ke Yahoo Finance untuk
-            # ticker yang sama. Sebelumnya tiap ticker melakukan 2x fetch
-            # 6-bulan identik (di sini + di get_volume_confirmation), yang
-            # menggandakan beban request dan memicu kegagalan diam-diam saat
-            # diproses berantai untuk banyak ticker (lihat 03_BUGS.md #10).
-            "history": hist,
         }
 
     except Exception as e:

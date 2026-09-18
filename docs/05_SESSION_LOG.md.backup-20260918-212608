@@ -4,30 +4,6 @@
 
 ---
 
-## Sesi: Jumat, 18 September 2026 (Bug Fix — Watchlist Signal Race Condition)
-
-### Konteks
-Diagnosis lanjutan dari laporan user "Watchlist Signal masih bermasalah", disertai screenshot record `WS-260918-1426` (PTRO) dan output console yang menunjukkan error berulang: `create_signal failed for <TICKER>: Could not find Watchlist: <TICKER>` untuk ticker `LUCY`, `TINS`, `DSSA`, `ERAA`, `KIJA`, `ANTM`.
-
-### Temuan
-1. **Root cause dikonfirmasi**: race condition antara `before_save()` dan proses INSERT dokumen Watchlist baru di Frappe -- `create_signal()` dipanggil sebelum baris Watchlist benar-benar ada di DB, menyebabkan validasi Link field gagal fail-silent. Detail lengkap di `03_BUGS.md` BUG #9.
-2. Field kosong (`Current Volume: 0`, `Take Profit Next/Extended: IDR 0,00`) di screenshot `WS-260918-1426` (PTRO) **BUKAN bug baru** -- Take Profit kosong memang by design (hanya diisi untuk rekomendasi Sell), dan volume 0 kemungkinan kegagalan fetch yfinance sesaat (konsisten dengan catatan minor lama soal tidak ada retry/backoff yfinance).
-
-### Tindakan yang Diambil
-- Patch `watchlist.py`: pindahkan `create_signal()` dari `before_save()` ke `on_update()` via flag `self._pending_signal_refresh`.
-- Backup file lama sebelum patch (`watchlist.py.backup-<timestamp>`).
-- Verifikasi: `bench migrate` + `bench restart`, lalu test manual bikin Watchlist ticker fiktif (`ZZTES`, 5 karakter) -- hasil `Watchlist Signal count: 1` (sebelumnya `0`).
-- Update `03_BUGS.md` (BUG #9 baru) dan `05_SESSION_LOG.md` (entri ini).
-
-### Catatan
-- Test pertama sempat gagal karena ticker uji `TESTBUG` (7 karakter) melebihi batas panjang field `ticker` (Property Setter membatasi 5 karakter) -- `CharacterLengthExceededError` di `_validate()`, bukan terkait bug yang sedang diperbaiki. Diulang dengan ticker 5 karakter (`ZZTES`) dan berhasil.
-
-### Checklist Prioritas Sesi Berikutnya
-- Item lama dari sesi 17 Sep masih berlaku (lihat entri sesi di bawah): BUG #1, #3 (sisa), #4, #5, #6, #7 dari `03_BUGS.md`.
-- Pertimbangkan tambah retry/backoff sederhana untuk `get_volume_confirmation()`/pemanggilan yfinance lain, supaya field volume tidak sering kosong akibat kegagalan sesaat.
-
----
-
 ## Sesi: Kamis, 17 September 2026 (Audit Repo — Verifikasi Langsung dari GitHub)
 
 ### Konteks

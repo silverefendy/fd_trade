@@ -163,33 +163,6 @@ Hasilnya: nilai `limiting_factor` yang sudah benar dihitung di memory langsung d
 
 ---
 
-## 🆕 BUG #9 — Watchlist Signal PERTAMA selalu gagal dibuat diam-diam untuk Watchlist BARU (ditemukan & FIXED 18 Sep 2026)
-
-> **STATUS (18 Sep 2026): RESOLVED.** Root cause dikonfirmasi via error log server + reproduksi manual di console, fix sudah diterapkan dan diverifikasi berhasil (test `ZZTES` menghasilkan 1 Watchlist Signal, sebelumnya 0).
-
-**Lokasi**: `fd_trade/fd_trade/doctype/watchlist/watchlist.py`
-
-**Penyebab (race condition lifecycle Frappe)**: `create_signal()` sebelumnya dipanggil dari dalam `before_save()` lewat `_auto_fetch_price_data()`. Untuk dokumen Watchlist **baru**, urutan lifecycle Frappe adalah:
-
-before_insert() -> set_new_name() (self.name = ticker) -> validate() -> before_save() -> [INSERT ke DB] -> after_insert()
-
-
-`self.name` sudah ter-set saat `before_save()` jalan, tapi baris Watchlist **belum ter-INSERT ke database**. `create_signal()` mencoba `insert()` dokumen Watchlist Signal baru dengan field Link `watchlist = <ticker>` -- Frappe otomatis validasi Link field ini dengan query ke DB, dan GAGAL karena baris Watchlist belum ada. Error tertangkap oleh `try/except` fail-silent di `create_signal()`, ter-log sebagai:
-
-create_signal failed for <TICKER>: Could not find Watchlist: <TICKER>
-
-Watchlist tetap berhasil dibuat -- tapi Watchlist Signal pertamanya **selalu hilang tanpa pemberitahuan**.
-
-Ditemukan lewat error log produksi: `LUCY`, `TINS`, `DSSA`, `ERAA`, `KIJA`, `ANTM` semuanya mengalami ini -- dikonfirmasi bukan masalah ticker salah/case-sensitivity (semua ticker ADA di Watchlist saat dicek ulang), murni masalah timing.
-
-**Dampak**: Histori Watchlist Signal untuk ticker baru selalu bolong di entry pertama. Tidak fatal (scheduler `refresh_all_watchlist` akan mengisi lagi di siklus berikutnya), tapi mengurangi akurasi histori rekomendasi dan notifikasi "sinyal berubah" (karena baseline pertama hilang).
-
-**Fix**: Pindahkan pemanggilan `create_signal()` dari `before_save()` ke `on_update()` (jalan setelah INSERT/UPDATE selesai untuk dokumen baru maupun existing), pakai flag instance `self._pending_signal_refresh` yang di-set di `_auto_fetch_price_data()`. Jalur lain (`fetch_support_resistance()` via tombol UI, `refresh_all_watchlist()` scheduler) tidak terdampak bug ini karena keduanya memanggil `create_signal()` setelah dokumen dipastikan sudah ada di DB.
-
-**Verifikasi**: Test manual di console -- ticker fiktif 5 karakter (`ZZTES`), `doc.insert()` -> `frappe.db.count("Watchlist Signal", {"ticker": "ZZTES"})` menghasilkan `1` (sebelumnya `0` sebelum fix).
-
----
-
 ## 🟢 Bug Minor / Catatan Kecil
 
 - **`price_data.py`**: `.JK` suffix selalu ditambahkan otomatis (kecuali ticker berawalan `^`, sudah ditangani untuk IHSG) — kalau suatu saat ticker biasa sudah mengandung `.JK` (misal salah input manual), akan jadi `BBCA.JK.JK` dan gagal fetch tanpa pesan error yang jelas ke user (hanya log_error backend).

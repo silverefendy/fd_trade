@@ -313,13 +313,9 @@ def refresh_all_watchlist():
                     values["resistance_level_3"] = sr_result["resistance_level_3"]
                     values["sr_details"] = sr_result["details"]
                     values["trend_status"] = sr_result.get("trend")
-                    # BUG #10 FIX: simpan history sementara (dibuang sebelum
-                    # frappe.db.set_value karena bukan field DocType asli).
-                    values["_sr_history"] = sr_result.get("history")
 
                 if values:
                     values["last_updated"] = frappe.utils.now()
-                    sr_history = values.pop("_sr_history", None)
                     frappe.db.set_value("Watchlist", row.name, values)
                     updated += 1
 
@@ -335,18 +331,9 @@ def refresh_all_watchlist():
                         support_level_3=values.get("support_level_3"),
                         resistance_level_2=values.get("resistance_level_2"),
                         resistance_level_3=values.get("resistance_level_3"),
-                        history=sr_history,
                     )
                 else:
                     skipped += 1
-
-                # BUG #10 FIX (19 Sep 2026): jeda kecil antar-ticker supaya
-                # tidak membombardir Yahoo Finance tanpa henti (22 ticker x
-                # ~4 request = 88+ request dalam hitungan detik sebelum fix
-                # ini, memicu kegagalan diam-diam). Sudah dicatat sebagai
-                # bug minor lama di 03_BUGS.md, dipatch bersamaan di sini.
-                import time
-                time.sleep(0.5)
 
             except Exception as row_error:
                 frappe.log_error(
@@ -435,23 +422,6 @@ def refresh_ihsg_trend():
     try:
         price = get_current_price("^JKSE")
         result = get_support_resistance("^JKSE")
-
-        # DIAGNOSTIC LOGGING (19 Sep 2026): fungsi ini sebelumnya SELALU
-        # "sukses tanpa exception" walau price/result gagal fetch (fail-silent
-        # di level get_current_price/get_support_resistance), sehingga tidak
-        # ada jejak SAMA SEKALI kenapa IHSG Signal jarang/tidak pernah
-        # terbuat lewat scheduler asli. Log eksplisit di sini supaya ketahuan
-        # di siklus jadwal berikutnya kalau ini penyebabnya.
-        if price is None:
-            frappe.log_error(
-                "get_current_price('^JKSE') return None -- fetch gagal/timeout.",
-                "FD-Trade IHSG Diagnostic"
-            )
-        if result is None:
-            frappe.log_error(
-                "get_support_resistance('^JKSE') return None -- fetch gagal/data histori tidak cukup.",
-                "FD-Trade IHSG Diagnostic"
-            )
 
         settings = frappe.get_single("Trading Account Settings")
         previous = frappe.get_all("IHSG Signal", fields=["market_regime"], order_by="creation desc", limit=1)

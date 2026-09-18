@@ -50,7 +50,6 @@ class Watchlist(Document):
             self.close_price = ohlc["close"]
 
         sr_result = get_support_resistance(self.ticker)
-        self._pending_sr_history = None
         if sr_result:
             self.support_level = sr_result["support_level"]
             self.support_level_2 = sr_result["support_level_2"]
@@ -60,9 +59,6 @@ class Watchlist(Document):
             self.resistance_level_3 = sr_result["resistance_level_3"]
             self.sr_details = sr_result["details"]
             self.trend_status = sr_result.get("trend")
-            # BUG #10 FIX (19 Sep 2026): simpan history mentah untuk dipakai
-            # ulang oleh create_signal() di on_update(), hindari fetch dobel.
-            self._pending_sr_history = sr_result.get("history")
 
         # BUG FIX (18 Sep 2026): create_signal() TIDAK boleh dipanggil di sini
         # (before_save). Untuk dokumen BARU, self.name sudah ter-set (autoname
@@ -93,7 +89,6 @@ class Watchlist(Document):
                 support_level_3=self.support_level_3,
                 resistance_level_2=self.resistance_level_2,
                 resistance_level_3=self.resistance_level_3,
-                history=getattr(self, "_pending_sr_history", None),
             )
 
 
@@ -144,7 +139,6 @@ def fetch_support_resistance(docname):
         support_level_3=doc.support_level_3,
         resistance_level_2=doc.resistance_level_2,
         resistance_level_3=doc.resistance_level_3,
-        history=result.get("history"),
     )
 
     return result

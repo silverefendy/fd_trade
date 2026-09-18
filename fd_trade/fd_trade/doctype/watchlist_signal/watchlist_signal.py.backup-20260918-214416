@@ -16,7 +16,7 @@ class WatchlistSignal(Document):
 def create_signal(watchlist_name, ticker, current_price, trend_status,
                    support_level, support_level_2, resistance_level,
                    support_level_3=None, resistance_level_2=None,
-                   resistance_level_3=None, history=None):
+                   resistance_level_3=None):
     """Hitung recommendation (Fase 1, rule-based) dan simpan sebagai record
     baru di Watchlist Signal -- dipanggil dari watchlist.py (before_save,
     fetch manual) dan tasks.py (refresh_all_watchlist scheduler).
@@ -52,12 +52,8 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
             "resistance_level_3": resistance_level_3,
         }
         proximity = get_nearest_level(current_price, levels, proximity_threshold)
-        # BUG #10 FIX (19 Sep 2026): pakai history yang sudah di-fetch
-        # caller (dari get_support_resistance) kalau tersedia, supaya tidak
-        # fetch ulang 6-bulan data yang sama ke Yahoo Finance.
         volume = get_volume_confirmation(
             ticker,
-            history=history,
             high_ratio=volume_high_ratio,
             low_ratio=volume_low_ratio,
         )
