@@ -18,6 +18,16 @@
   "stop_loss",
   "sizing_limiting_factor",
   "confluence_notes",
+  "notes",
+  "nearest_level_name",
+  "nearest_level_distance_pct",
+  "proximity_category",
+  "volume_status",
+  "current_volume",
+  "avg_volume_20d",
+  "take_profit_next",
+  "take_profit_extended",
+  "ihsg_context",
   "risk_amount",
   "risk_per_share",
   "suggested_lot",
@@ -113,6 +123,70 @@
    "fieldname": "confluence_notes",
    "fieldtype": "Small Text",
    "label": "Confluence Check",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Catatan",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nearest_level_name",
+   "fieldtype": "Data",
+   "label": "Level Terdekat",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nearest_level_distance_pct",
+   "fieldtype": "Percent",
+   "label": "Jarak Level Terdekat (%)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "proximity_category",
+   "fieldtype": "Select",
+   "label": "Proximity",
+   "options": "mendekati support\nmendekati resistance\ndi tengah range",
+   "read_only": 1
+  },
+  {
+   "fieldname": "volume_status",
+   "fieldtype": "Select",
+   "label": "Volume Status",
+   "options": "Volume Tinggi\nVolume Normal\nVolume Rendah",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_volume",
+   "fieldtype": "Float",
+   "label": "Current Volume",
+   "read_only": 1
+  },
+  {
+   "fieldname": "avg_volume_20d",
+   "fieldtype": "Float",
+   "label": "Average Volume 20D",
+   "read_only": 1
+  },
+  {
+   "fieldname": "take_profit_next",
+   "fieldtype": "Currency",
+   "label": "Take Profit Next",
+   "read_only": 1,
+   "hide_currency_symbol": "1"
+  },
+  {
+   "fieldname": "take_profit_extended",
+   "fieldtype": "Currency",
+   "label": "Take Profit Extended",
+   "read_only": 1,
+   "hide_currency_symbol": "1"
+  },
+  {
+   "fieldname": "ihsg_context",
+   "fieldtype": "Data",
+   "label": "Konteks IHSG",
    "read_only": 1
   },
   {

@@ -27,8 +27,31 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
     import frappe
     from fd_trade.utils.price_data import calculate_recommendation
     from fd_trade.utils.price_data import get_pivot_points, check_confluence
+    from fd_trade.utils.price_data import get_nearest_level, get_volume_confirmation
+    from fd_trade.utils.price_data import PROXIMITY_THRESHOLD_PCT, VOLUME_HIGH_RATIO, VOLUME_LOW_RATIO
 
     try:
+        settings = frappe.get_single("Trading Account Settings")
+        proximity_threshold = settings.proximity_threshold_pct or PROXIMITY_THRESHOLD_PCT
+        volume_high_ratio = settings.volume_high_ratio or VOLUME_HIGH_RATIO
+        volume_low_ratio = settings.volume_low_ratio or VOLUME_LOW_RATIO
+        ihsg_trend = settings.ihsg_trend
+
+        levels = {
+            "support_level": support_level,
+            "support_level_2": support_level_2,
+            "support_level_3": support_level_3,
+            "resistance_level": resistance_level,
+            "resistance_level_2": resistance_level_2,
+            "resistance_level_3": resistance_level_3,
+        }
+        proximity = get_nearest_level(current_price, levels, proximity_threshold)
+        volume = get_volume_confirmation(
+            ticker,
+            high_ratio=volume_high_ratio,
+            low_ratio=volume_low_ratio,
+        )
+
         confluence_text = "Pivot point tidak tersedia."
         pivot = get_pivot_points(ticker)
         if pivot:
@@ -51,7 +74,14 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
             support_level_3=support_level_3,
             resistance_level_2=resistance_level_2,
             resistance_level_3=resistance_level_3,
+            ihsg_trend=ihsg_trend,
+            proximity=proximity,
+            volume_status=volume.get("volume_status") if volume else None,
         )
+
+        notes = rec.get("notes")
+        if notes:
+            confluence_text = f"{confluence_text} | {notes}"
 
         signal = frappe.get_doc({
             "doctype": "Watchlist Signal",
@@ -66,6 +96,16 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
             "stop_loss": rec.get("stop_loss"),
             "sizing_limiting_factor": rec.get("sizing_limiting_factor"),
             "confluence_notes": confluence_text,
+            "notes": notes,
+            "nearest_level_name": proximity.get("level_name") if proximity else None,
+            "nearest_level_distance_pct": proximity.get("distance_pct") if proximity else None,
+            "proximity_category": proximity.get("category") if proximity else None,
+            "volume_status": volume.get("volume_status") if volume else None,
+            "current_volume": volume.get("current_volume") if volume else None,
+            "avg_volume_20d": volume.get("avg_volume_20d") if volume else None,
+            "take_profit_next": rec.get("take_profit_next"),
+            "take_profit_extended": rec.get("take_profit_extended"),
+            "ihsg_context": ihsg_trend,
             "risk_amount": rec.get("risk_amount"),
             "risk_per_share": rec.get("risk_per_share"),
             "suggested_lot": rec.get("suggested_lot"),
