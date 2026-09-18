@@ -417,21 +417,40 @@ def refresh_ihsg_trend():
     """Update trend IHSG (^JKSE) sebagai acuan kondisi market secara umum.
     Disimpan di Trading Account Settings (Single), field ihsg_*.
     Terpisah dari refresh_all_watchlist supaya tidak saling mengganggu."""
-    from fd_trade.utils.price_data import get_current_price, get_support_resistance
+    from fd_trade.utils.price_data import get_current_price, get_support_resistance, calculate_market_regime
 
     try:
         price = get_current_price("^JKSE")
         result = get_support_resistance("^JKSE")
 
         settings = frappe.get_single("Trading Account Settings")
+        previous = frappe.get_all("IHSG Signal", fields=["market_regime"], order_by="creation desc", limit=1)
+        regime = None
         if price is not None:
             settings.ihsg_current_price = price
         if result:
             settings.ihsg_trend = result.get("trend")
             settings.ihsg_ma20 = result.get("ma20")
             settings.ihsg_ma50 = result.get("ma50")
+            regime = calculate_market_regime(
+                result.get("trend"), price, result.get("ma20"), result.get("ma50")
+            )
         settings.ihsg_last_updated = frappe.utils.now()
         settings.save(ignore_permissions=True)
+        if result and regime:
+            ihsg_signal = frappe.get_doc({
+                "doctype": "IHSG Signal",
+                "timestamp": frappe.utils.now(),
+                "ihsg_price": price,
+                "trend_status": result.get("trend"),
+                "market_regime": regime,
+                "support_level": result.get("support_level"),
+                "resistance_level": result.get("resistance_level"),
+                "notes": f"Regime IHSG saat ini: {regime}.",
+            })
+            ihsg_signal.insert(ignore_permissions=True)
+            if previous and previous[0].market_regime != regime:
+                send_telegram_notification(f"Market regime IHSG berubah: {previous[0].market_regime} -> {regime}.")
         frappe.db.commit()
 
     except Exception as e:
@@ -464,3 +483,17 @@ def cleanup_old_watchlist_signals():
 
     except Exception as e:
         frappe.log_error(f"cleanup_old_watchlist_signals failed: {e}", "FD-Trade Scheduled Tasks")
+
+
+def cleanup_old_ihsg_signals():
+    """Hapus histori IHSG Signal yang melewati retention days."""
+    try:
+        settings = frappe.get_single("Trading Account Settings")
+        days = settings.ihsg_signal_retention_days or 90
+        cutoff = frappe.utils.add_days(frappe.utils.now_datetime(), -days)
+        old_signals = frappe.get_all("IHSG Signal", filters=[["timestamp", "<", cutoff]], pluck="name")
+        for name in old_signals:
+            frappe.delete_doc("IHSG Signal", name, ignore_permissions=True, force=True)
+        frappe.db.commit()
+    except Exception as e:
+        frappe.log_error(f"cleanup_old_ihsg_signals failed: {e}", "FD-Trade Scheduled Tasks")

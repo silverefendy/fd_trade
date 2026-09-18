@@ -1,0 +1,22 @@
+{
+ "actions": [],
+ "autoname": "format:IHSG-{YY}{MM}{DD}-{####}",
+ "creation": "2026-09-18 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["timestamp", "ihsg_price", "trend_status", "market_regime", "support_level", "resistance_level", "notes"],
+ "fields": [
+  {"fieldname": "timestamp", "fieldtype": "Datetime", "label": "Timestamp", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "ihsg_price", "fieldtype": "Float", "label": "IHSG Price", "in_list_view": 1},
+  {"fieldname": "trend_status", "fieldtype": "Select", "label": "Trend", "options": "Bullish Kuat\nBullish Lemah\nSideways\nBearish Lemah\nBearish Kuat", "in_list_view": 1},
+  {"fieldname": "market_regime", "fieldtype": "Select", "label": "Market Regime", "options": "Risk-On\nNeutral\nRisk-Off\nAvoid New Entry", "in_list_view": 1},
+  {"fieldname": "support_level", "fieldtype": "Currency", "label": "Support Level", "read_only": 1, "hide_currency_symbol": "1"},
+  {"fieldname": "resistance_level", "fieldtype": "Currency", "label": "Resistance Level", "read_only": 1, "hide_currency_symbol": "1"},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes", "read_only": 1}
+ ],
+ "module": "FD-Trade",
+ "name": "IHSG Signal",
+ "permissions": [{"create": 1, "delete": 1, "read": 1, "role": "System Manager", "write": 1}, {"create": 1, "read": 1, "role": "All"}],
+ "sort_field": "timestamp",
+ "sort_order": "DESC"
+}

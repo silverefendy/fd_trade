@@ -27,6 +27,7 @@
   "proximity_threshold_pct",
   "volume_high_ratio",
   "volume_low_ratio",
+  "ihsg_signal_retention_days",
   "telegram_section",
   "telegram_bot_token",
   "telegram_chat_id",
@@ -159,6 +160,13 @@
    "fieldtype": "Float",
    "label": "Volume Rendah Ratio",
    "default": "0.5"
+  },
+  {
+   "fieldname": "ihsg_signal_retention_days",
+   "fieldtype": "Int",
+   "label": "IHSG Signal Retention (Hari)",
+   "default": "90",
+   "description": "Jumlah hari penyimpanan histori IHSG Signal."
   },
   {
    "fieldname": "telegram_section",

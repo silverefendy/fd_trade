@@ -36,6 +36,12 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
         volume_high_ratio = settings.volume_high_ratio or VOLUME_HIGH_RATIO
         volume_low_ratio = settings.volume_low_ratio or VOLUME_LOW_RATIO
         ihsg_trend = settings.ihsg_trend
+        ihsg_latest = frappe.get_all(
+            "IHSG Signal",
+            fields=["market_regime", "trend_status", "ihsg_price", "timestamp"],
+            order_by="timestamp desc",
+            limit=1,
+        )
 
         levels = {
             "support_level": support_level,
@@ -105,7 +111,10 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
             "avg_volume_20d": volume.get("avg_volume_20d") if volume else None,
             "take_profit_next": rec.get("take_profit_next"),
             "take_profit_extended": rec.get("take_profit_extended"),
-            "ihsg_context": ihsg_trend,
+            "ihsg_context": (
+                f"{ihsg_latest[0].market_regime} ({ihsg_latest[0].trend_status})"
+                if ihsg_latest else ihsg_trend
+            ),
             "risk_amount": rec.get("risk_amount"),
             "risk_per_share": rec.get("risk_per_share"),
             "suggested_lot": rec.get("suggested_lot"),

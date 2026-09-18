@@ -380,6 +380,25 @@ def calculate_recommendation(ticker, current_price, trend, support_level, suppor
     return result
 
 
+def calculate_market_regime(trend_status, current_price=None, ma20=None, ma50=None):
+    """Klasifikasikan kondisi pasar IHSG tanpa mengubah rekomendasi saham.
+
+    Risk-On memerlukan trend bullish dan harga di atas MA20 serta MA50.
+    """
+    if trend_status in ("Bullish Kuat", "Bullish Lemah"):
+        if current_price is not None and ma20 is not None and ma50 is not None \
+                and current_price > ma20 and current_price > ma50:
+            return "Risk-On"
+        return "Neutral"
+    if trend_status == "Sideways":
+        return "Neutral"
+    if trend_status == "Bearish Lemah":
+        return "Risk-Off"
+    if trend_status == "Bearish Kuat":
+        return "Avoid New Entry"
+    return "Neutral"
+
+
 def get_pivot_points(ticker, period="daily"):
     """Hitung Pivot Point classic (S1-S3, R1-R3) dari data OHLC yfinance.
     period: 'daily' (pakai H/L/C candle sebelumnya, sudah closed) atau 'weekly'.
