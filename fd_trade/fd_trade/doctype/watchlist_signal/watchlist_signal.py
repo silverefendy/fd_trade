@@ -24,8 +24,21 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
     aplikasi ini untuk hal non-kritikal)."""
     import frappe
     from fd_trade.utils.price_data import calculate_recommendation
+    from fd_trade.utils.price_data import get_pivot_points, check_confluence
 
     try:
+        confluence_text = "Pivot point tidak tersedia."
+        pivot = get_pivot_points(ticker)
+        if pivot:
+            is_conf_s, delta_s = check_confluence(support_level, pivot["S1"])
+            is_conf_r, delta_r = check_confluence(resistance_level, pivot["R1"])
+            confluence_text = (
+                f"Pivot S1={pivot['S1']} (selisih {delta_s}%, "
+                f"{'CONFLUENT' if is_conf_s else 'divergen'}) | "
+                f"Pivot R1={pivot['R1']} (selisih {delta_r}%, "
+                f"{'CONFLUENT' if is_conf_r else 'divergen'})"
+            )
+
         rec = calculate_recommendation(
             ticker=ticker,
             current_price=current_price,
@@ -47,6 +60,7 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
             "recommendation_price_high": rec.get("recommendation_price_high"),
             "stop_loss": rec.get("stop_loss"),
             "sizing_limiting_factor": rec.get("sizing_limiting_factor"),
+            "confluence_notes": confluence_text,
             "risk_amount": rec.get("risk_amount"),
             "risk_per_share": rec.get("risk_per_share"),
             "suggested_lot": rec.get("suggested_lot"),

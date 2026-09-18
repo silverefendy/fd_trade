@@ -9,6 +9,8 @@
   "source_type",
   "source_name",
   "ticker",
+  "source_s1",
+  "source_r1",
   "date_received",
   "raw_message",
   "reliability_score",
@@ -63,6 +65,20 @@
    "fieldname": "screening_notes",
    "fieldtype": "Text",
    "label": "Screening Notes"
+  },
+  {
+   "fieldname": "source_s1",
+   "fieldtype": "Currency",
+   "label": "Source S1 (Support)",
+   "description": "Level support (S1) dari sumber tip mentah, sebelum divalidasi sistem. Dipakai untuk cross-check confluence terhadap get_support_resistance()/get_pivot_points() FD-Trade.",
+   "hide_currency_symbol": "1"
+  },
+  {
+   "fieldname": "source_r1",
+   "fieldtype": "Currency",
+   "label": "Source R1 (Resistance)",
+   "description": "Level resistance (R1) dari sumber tip mentah, sebelum divalidasi sistem.",
+   "hide_currency_symbol": "1"
   }
  ],
  "index_web_pages_for_search": 1,

@@ -161,11 +161,15 @@ def get_support_resistance(ticker):
             else:
                 trend = "Sideways"
 
+        # BUG FIX (17 Sep 2026): support/resistance sebelumnya bisa berisi
+        # desimal panjang kalau kandidat terpilih berasal dari MA (rolling mean),
+        # bukan dari swing high/low OHLC asli yang sudah bulat. Dibulatkan ke
+        # fraksi harga resmi BEI supaya semua level konsisten & bisa dieksekusi.
         return {
-            "support_level": support_level,
-            "support_level_2": support_level_2,
-            "resistance_level": resistance_level,
-            "resistance_level_2": resistance_level_2,
+            "support_level": round_to_tick(support_level),
+            "support_level_2": round_to_tick(support_level_2),
+            "resistance_level": round_to_tick(resistance_level),
+            "resistance_level_2": round_to_tick(resistance_level_2),
             "details": "\n".join(detail_lines),
             "trend": trend,
             "ma20": ma20,
@@ -250,3 +254,62 @@ def calculate_recommendation(ticker, current_price, trend, support_level, suppor
             }
 
     return {"recommendation": "Wait"}
+
+
+def get_pivot_points(ticker, period="daily"):
+    """Hitung Pivot Point classic (S1-S3, R1-R3) dari data OHLC yfinance.
+    period: 'daily' (pakai H/L/C candle sebelumnya, sudah closed) atau 'weekly'.
+
+    Fail-silent: return None kalau data tidak tersedia, konsisten dengan
+    pola get_support_resistance() yang sudah ada di file ini.
+
+    CATATAN: ini metode terpisah dari get_support_resistance() (swing+MA).
+    Keduanya sengaja tidak digabung jadi satu angka -- dipakai berdampingan
+    lewat check_confluence() supaya transparan kapan keduanya sepakat
+    (confluence) vs kapan berbeda (perlu kehati-hatian ekstra).
+    """
+    import yfinance as yf
+    import frappe
+
+    yf_ticker = ticker if ticker.startswith("^") else f"{ticker}.JK"
+    interval = "1d" if period == "daily" else "1wk"
+
+    try:
+        data = yf.Ticker(yf_ticker).history(period="1mo", interval=interval)
+        if data is None or len(data) < 2:
+            return None
+
+        prev = data.iloc[-2]
+        H, L, C = prev["High"], prev["Low"], prev["Close"]
+        PP = (H + L + C) / 3
+
+        R1 = (2 * PP) - L
+        S1 = (2 * PP) - H
+        R2 = PP + (H - L)
+        S2 = PP - (H - L)
+        R3 = H + 2 * (PP - L)
+        S3 = L - 2 * (H - PP)
+
+        return {
+            "pivot": round(PP, 2),
+            "S1": round(S1, 2), "S2": round(S2, 2), "S3": round(S3, 2),
+            "R1": round(R1, 2), "R2": round(R2, 2), "R3": round(R3, 2),
+            "period": period,
+        }
+    except Exception as e:
+        frappe.log_error(f"get_pivot_points failed for {ticker}: {e}", "FD-Trade Pivot Points")
+        return None
+
+
+def check_confluence(swing_ma_level, pivot_level, threshold_pct=2.0):
+    """Cek apakah level swing+MA dan pivot point saling berdekatan (confluence).
+    Confluence = dua metode independen sepakat -> level lebih kredibel.
+    Divergen = wajar terjadi karena horizon waktu beda (pivot jangka pendek
+    vs swing 6 bulan) -- BUKAN berarti salah satu keliru.
+
+    Return: (is_confluent: bool, delta_pct: float atau None kalau data kosong)
+    """
+    if not swing_ma_level or not pivot_level:
+        return False, None
+    delta_pct = abs(swing_ma_level - pivot_level) / swing_ma_level * 100
+    return delta_pct <= threshold_pct, round(delta_pct, 2)

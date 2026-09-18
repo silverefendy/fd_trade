@@ -5,11 +5,11 @@ frappe.listview_settings["Watchlist"] = {
 
         high_price: (value) => {
             if (!value) return "";
-            return `<span style="color: #388e3c;">${format_currency(value)}</span>`;
+            return `<span style="color: #388e3c;">${format_number(value, null, 0)}</span>`;
         },
         low_price: (value) => {
             if (!value) return "";
-            return `<span style="color: #d32f2f;">${format_currency(value)}</span>`;
+            return `<span style="color: #d32f2f;">${format_number(value, null, 0)}</span>`;
         },
         current_price: (value, df, doc) => {
             if (!value) return "";
@@ -35,23 +35,23 @@ frappe.listview_settings["Watchlist"] = {
             const style = closest_color
                 ? `color: ${closest_color}; font-weight: 700;`
                 : "";
-            return `<span style="${style}">${format_currency(value)}</span>`;
+            return `<span style="${style}">${format_number(value, null, 0)}</span>`;
         },
         support_level: (value) => {
             if (!value) return "";
-            return `<span style="color: #c62828;">${format_currency(value)}</span>`;
+            return `<span style="color: #c62828;">${format_number(value, null, 0)}</span>`;
         },
         support_level_2: (value) => {
             if (!value) return "";
-            return `<span style="color: #ef9a9a;">${format_currency(value)}</span>`;
+            return `<span style="color: #ef9a9a;">${format_number(value, null, 0)}</span>`;
         },
         resistance_level: (value) => {
             if (!value) return "";
-            return `<span style="color: #2e7d32;">${format_currency(value)}</span>`;
+            return `<span style="color: #2e7d32;">${format_number(value, null, 0)}</span>`;
         },
         resistance_level_2: (value) => {
             if (!value) return "";
-            return `<span style="color: #81c784;">${format_currency(value)}</span>`;
+            return `<span style="color: #81c784;">${format_number(value, null, 0)}</span>`;
         },
 
         // === Kategori: badge dengan warna pastel/muted (bukan warna terang),

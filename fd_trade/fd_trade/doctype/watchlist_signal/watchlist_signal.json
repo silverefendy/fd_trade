@@ -1,8 +1,7 @@
 {
  "actions": [],
- "allow_rename": 0,
  "autoname": "format:WS-{YY}{MM}{DD}-{####}",
- "creation": "2026-09-16 00:00:00.000000",
+ "creation": "2026-09-16 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -18,6 +17,7 @@
   "recommendation_price_high",
   "stop_loss",
   "sizing_limiting_factor",
+  "confluence_notes",
   "risk_amount",
   "risk_per_share",
   "suggested_lot",
@@ -27,39 +27,40 @@
   {
    "fieldname": "watchlist",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Watchlist",
    "options": "Watchlist",
-   "reqd": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1
+   "reqd": 1
   },
   {
+   "description": "Diisi manual/nanti otomatis kalau trade dibuat dari sinyal ini.",
    "fieldname": "linked_trade",
    "fieldtype": "Link",
-   "label": "Trade Journal",
-   "options": "Trade Journal",
    "in_standard_filter": 1,
-   "description": "Diisi manual/nanti otomatis kalau trade dibuat dari sinyal ini."
+   "label": "Trade Journal",
+   "options": "Trade Journal"
   },
   {
    "fieldname": "ticker",
    "fieldtype": "Data",
-   "label": "Ticker",
    "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "label": "Ticker"
   },
   {
    "fieldname": "timestamp",
    "fieldtype": "Datetime",
-   "label": "Timestamp",
-   "reqd": 1,
    "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "label": "Timestamp",
+   "reqd": 1
   },
   {
    "fieldname": "current_price",
    "fieldtype": "Currency",
-   "label": "Current Price"
+   "label": "Current Price",
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "trend_status",
@@ -74,64 +75,77 @@
   {
    "fieldname": "recommendation",
    "fieldtype": "Select",
-   "label": "Recommendation",
-   "options": "Buy\nWait\nSell\nAvoid",
    "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "label": "Recommendation",
+   "options": "Buy\nWait\nSell\nAvoid"
   },
   {
    "fieldname": "recommendation_price_low",
    "fieldtype": "Currency",
-   "label": "Recom B/S"
+   "label": "Recom B/S",
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "recommendation_price_high",
    "fieldtype": "Currency",
-   "label": "Recommend Price (High)"
+   "label": "Recommend Price (High)",
+   "hide_currency_symbol": "1"
   },
   {
+   "description": "Level invalidasi teknikal (support kedua) untuk sinyal Buy. Kosong untuk Sell/Wait/Avoid.",
    "fieldname": "stop_loss",
    "fieldtype": "Currency",
    "label": "Stop Loss (Buy)",
    "read_only": 1,
-   "description": "Level invalidasi teknikal (support kedua) untuk sinyal Buy. Kosong untuk Sell/Wait/Avoid."
+   "hide_currency_symbol": "1"
   },
   {
+   "description": "Faktor yang membatasi suggested_lot -- risk (murni risk per trade), max_per_stock, atau max_exposure. Diisi otomatis dari risk_engine.py, transparansi kenapa lot lebih kecil dari perkiraan risk murni.",
    "fieldname": "sizing_limiting_factor",
    "fieldtype": "Select",
    "label": "Sizing Limited By",
    "options": "risk\nmax_per_stock\nmax_exposure",
-   "read_only": 1,
-   "description": "Faktor yang membatasi suggested_lot -- risk (murni risk per trade), max_per_stock, atau max_exposure. Diisi otomatis dari risk_engine.py, transparansi kenapa lot lebih kecil dari perkiraan risk murni."
+   "read_only": 1
+  },
+  {
+   "description": "Perbandingan otomatis support/resistance swing+MA vs pivot point classic. Confluence (selisih <=2%) = sinyal S/R dikonfirmasi 2 metode independen.",
+   "fieldname": "confluence_notes",
+   "fieldtype": "Small Text",
+   "label": "Confluence Check",
+   "read_only": 1
   },
   {
    "fieldname": "risk_amount",
    "fieldtype": "Currency",
-   "label": "Risk Amount"
+   "label": "Risk Amount",
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "risk_per_share",
    "fieldtype": "Currency",
-   "label": "Risk Per Share"
+   "label": "Risk Per Share",
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "suggested_lot",
    "fieldtype": "Int",
-   "label": "Suggested Lot",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "label": "Suggested Lot"
   },
   {
    "fieldname": "suggested_position_rp",
    "fieldtype": "Currency",
-   "label": "Suggested Position (Rp)"
+   "label": "Suggested Position (Rp)",
+   "hide_currency_symbol": "1"
   }
  ],
- "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-16 00:00:00.000000",
+ "modified": "2026-09-17 09:22:32.473057",
  "modified_by": "Administrator",
  "module": "FD-Trade",
  "name": "Watchlist Signal",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -154,7 +168,8 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "timestamp",
- "sort_order": "DESC",
- "track_changes": 0
+ "sort_order": "ASC",
+ "states": []
 }

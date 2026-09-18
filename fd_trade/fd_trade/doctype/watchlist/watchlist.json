@@ -28,7 +28,8 @@
   "resistance_level_2",
   "sr_details",
   "trend_status",
-  "last_updated"
+  "last_updated",
+  "signal_source"
  ],
  "fields": [
   {
@@ -44,7 +45,8 @@
    "fieldtype": "Currency",
    "label": "Current Price",
    "read_only": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "ohlc_section",
@@ -55,13 +57,15 @@
    "fieldname": "open_price",
    "fieldtype": "Currency",
    "label": "Open",
-   "read_only": 1
+   "read_only": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "high_price",
    "fieldtype": "Currency",
    "label": "High",
-   "read_only": 1
+   "read_only": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "column_break_ohlc",
@@ -71,13 +75,15 @@
    "fieldname": "low_price",
    "fieldtype": "Currency",
    "label": "Low",
-   "read_only": 1
+   "read_only": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "close_price",
    "fieldtype": "Currency",
    "label": "Close",
-   "read_only": 1
+   "read_only": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "klasifikasi_section",
@@ -126,28 +132,32 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Support Level",
-   "read_only": 1
+   "read_only": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "resistance_level",
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Resistance Level",
-   "read_only": 1
+   "read_only": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "description": "Level support kedua (lebih jauh dari harga sekarang dibanding Support Level).",
    "fieldname": "support_level_2",
    "fieldtype": "Currency",
    "label": "Support Level 2",
-   "read_only": 1
+   "read_only": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "description": "Level resistance kedua (lebih jauh dari harga sekarang dibanding Resistance Level).",
    "fieldname": "resistance_level_2",
    "fieldtype": "Currency",
    "label": "Resistance Level 2",
-   "read_only": 1
+   "read_only": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "description": "Kombinasi Swing High/Low (6 bulan) + Moving Average (MA20/50/200). Klik tombol 'Fetch Support/Resistance' untuk update.",
@@ -170,6 +180,14 @@
    "in_list_view": 1,
    "label": "Last Updated",
    "read_only": 1
+  },
+  {
+   "fieldname": "signal_source",
+   "fieldtype": "Link",
+   "options": "Signal Source",
+   "label": "Signal Source (Asal)",
+   "read_only": 1,
+   "description": "Signal Source asal kalau Watchlist ini dibuat via Promote to Watchlist. Kosong kalau dibuat manual langsung. Dipakai untuk pelacakan reliability_score yang presisi (bukan cuma cocok ticker)."
   }
  ],
  "index_web_pages_for_search": 1,

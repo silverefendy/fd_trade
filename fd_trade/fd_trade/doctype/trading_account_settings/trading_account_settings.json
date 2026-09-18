@@ -33,7 +33,8 @@
    "fieldname": "modal_total",
    "fieldtype": "Currency",
    "label": "Modal Total",
-   "default": "30000000"
+   "default": "30000000",
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "risk_per_trade_percent",

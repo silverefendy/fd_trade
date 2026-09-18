@@ -84,13 +84,15 @@
    "fieldname": "entry_price",
    "fieldtype": "Currency",
    "label": "Entry Price",
-   "reqd": 1
+   "reqd": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "stop_loss",
    "fieldtype": "Currency",
    "label": "Stop Loss",
-   "reqd": 1
+   "reqd": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "target_category",
@@ -104,7 +106,8 @@
    "fieldname": "target_price",
    "fieldtype": "Currency",
    "label": "Target Price",
-   "description": "Otomatis terisi berdasarkan Target Category, kecuali dipilih 'Custom'."
+   "description": "Otomatis terisi berdasarkan Target Category, kecuali dipilih 'Custom'.",
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "target_suggestions",
@@ -122,27 +125,31 @@
    "fieldname": "support_level",
    "fieldtype": "Currency",
    "label": "Support Level",
-   "read_only": 1
+   "read_only": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "resistance_level",
    "fieldtype": "Currency",
    "label": "Resistance Level",
-   "read_only": 1
+   "read_only": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "support_level_2",
    "fieldtype": "Currency",
    "label": "Support Level 2",
    "read_only": 1,
-   "description": "Level support kedua (lebih jauh dari harga sekarang dibanding Support Level)."
+   "description": "Level support kedua (lebih jauh dari harga sekarang dibanding Support Level).",
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "resistance_level_2",
    "fieldtype": "Currency",
    "label": "Resistance Level 2",
    "read_only": 1,
-   "description": "Level resistance kedua (lebih jauh dari harga sekarang dibanding Resistance Level)."
+   "description": "Level resistance kedua (lebih jauh dari harga sekarang dibanding Resistance Level).",
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "sr_details",
@@ -166,7 +173,8 @@
    "fieldname": "risk_amount",
    "fieldtype": "Currency",
    "label": "Risk Amount",
-   "read_only": 1
+   "read_only": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "risk_r",
@@ -183,7 +191,8 @@
   {
    "fieldname": "exit_price",
    "fieldtype": "Currency",
-   "label": "Exit Price"
+   "label": "Exit Price",
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "result_r",
@@ -194,7 +203,8 @@
    "fieldname": "result_rp",
    "fieldtype": "Currency",
    "label": "Result Rp",
-   "read_only": 1
+   "read_only": 1,
+   "hide_currency_symbol": "1"
   },
   {
    "fieldname": "status",
