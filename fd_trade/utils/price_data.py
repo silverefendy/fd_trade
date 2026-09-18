@@ -315,8 +315,6 @@ def calculate_recommendation(ticker, current_price, trend, support_level, suppor
        sudah pegang, jangan entry baru jika belum)
     4. Selain itu -> Wait
     """
-    threshold = 0.02  # 2%
-
     if trend == "Bearish Kuat":
         result = {"recommendation": "Avoid"}
         if ihsg_trend == "Bearish Kuat":
@@ -325,12 +323,14 @@ def calculate_recommendation(ticker, current_price, trend, support_level, suppor
 
     if support_level and current_price is not None and current_price >= support_level:
         gap_pct = (current_price - support_level) / support_level
-        if gap_pct <= threshold:
+        if gap_pct <= PROXIMITY_THRESHOLD_PCT / 100:
             result = {
                 "recommendation": "Buy",
                 "recommendation_price_low": round_to_tick(support_level),
                 "recommendation_price_high": round_to_tick(support_level * 1.01),
             }
+            if support_level_3:
+                result["support_reference_extended"] = round_to_tick(support_level_3)
             if support_level_2:
                 risk_per_share = current_price - support_level_2
                 if risk_per_share > 0:
@@ -359,12 +359,16 @@ def calculate_recommendation(ticker, current_price, trend, support_level, suppor
     if (resistance_level and current_price is not None and current_price <= resistance_level
             and trend != "Bullish Kuat"):
         gap_pct = (resistance_level - current_price) / resistance_level
-        if gap_pct <= threshold:
+        if gap_pct <= PROXIMITY_THRESHOLD_PCT / 100:
             result = {
                 "recommendation": "Sell",
                 "recommendation_price_low": round_to_tick(resistance_level * 0.99),
                 "recommendation_price_high": round_to_tick(resistance_level),
             }
+            if resistance_level_2:
+                result["take_profit_next"] = round_to_tick(resistance_level_2)
+            if resistance_level_3:
+                result["take_profit_extended"] = round_to_tick(resistance_level_3)
             if proximity:
                 result["proximity"] = proximity
             return result
