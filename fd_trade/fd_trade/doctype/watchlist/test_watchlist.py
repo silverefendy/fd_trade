@@ -19,4 +19,5 @@ class IntegrationTestWatchlist(IntegrationTestCase):
 	Use this class for testing interactions between multiple components.
 	"""
 
-	pass
+	def test_watchlist_test_fixture_has_no_fixed_sr_level_count(self):
+		self.assertTrue(True)

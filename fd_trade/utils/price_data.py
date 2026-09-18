@@ -250,7 +250,7 @@ def get_volume_confirmation(ticker, history=None, high_ratio=VOLUME_HIGH_RATIO,
             return None
 
         volumes = history["Volume"].dropna()
-        if len(volumes) < 2:
+        if len(volumes) < VOLUME_AVERAGE_DAYS + 1:
             return None
 
         current_volume = float(volumes.iloc[-1])

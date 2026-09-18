@@ -1,7 +1,9 @@
 # Copyright (c) 2026, Efendy (silverefendy) and Contributors
 # See license.txt
 
-# import frappe
+from inspect import signature
+
+from fd_trade.fd_trade.doctype.watchlist_signal.watchlist_signal import create_signal
 from frappe.tests import IntegrationTestCase
 
 
@@ -19,4 +21,8 @@ class IntegrationTestWatchlistSignal(IntegrationTestCase):
 	Use this class for testing interactions between multiple components.
 	"""
 
-	pass
+	def test_create_signal_accepts_three_level_arguments(self):
+		parameters = signature(create_signal).parameters
+		self.assertIn("support_level_3", parameters)
+		self.assertIn("resistance_level_2", parameters)
+		self.assertIn("resistance_level_3", parameters)

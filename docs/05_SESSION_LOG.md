@@ -45,3 +45,8 @@ Sesi ini adalah **audit/verifikasi**, bukan pengembangan fitur baru. Tujuannya m
 5. Implementasikan `after_install()` di `install.py` (BUG #4)
 6. Tulis ulang `docs/02_SUMMARY.md` dan `docs/04_FITUR.md` supaya mencakup Watchlist Signal, risk_engine, round_to_tick, IHSG trend
 7. Verifikasi ulang BUG #6 dan #7 langsung dari `trade_journal.json`/`trading_account_settings.json` (belum dicek di audit ini)
+### 18 Sep 2026 -- S/R 3-level, volume, proximity, IHSG regime
+
+- Implementasi bertahap sudah mencakup S1-S3/R1-R3, proximity 3%, validasi volume 20 hari, konteks IHSG, dan histori `IHSG Signal`.
+- Threshold volume default: tinggi di atas 1,5x rata-rata dan rendah di bawah 0,5x rata-rata. Sumber harga otomatis tetap yfinance; tidak ada scraping broker, Stockbit, atau IDX.
+- Sebelum deploy ke site existing, review migration patch lalu jalankan `bench migrate`; setelah itu jalankan `bench run-tests --app fd_trade` pada environment bench yang aktif.
