@@ -13,6 +13,27 @@ class WatchlistSignal(Document):
     pass
 
 
+def _build_recommendation_change_message(ticker, previous_recommendation,
+                                          recommendation, current_price,
+                                          recommendation_price_low=None,
+                                          recommendation_price_high=None,
+                                          stop_loss=None, notes=None):
+    """Buat pesan Telegram hanya jika recommendation berubah."""
+    if not previous_recommendation or previous_recommendation == recommendation:
+        return None
+    price_text = f"Rp{current_price:,.0f}" if current_price is not None else "harga tidak tersedia"
+    message = f"Sinyal berubah: {ticker} {previous_recommendation} -> {recommendation} @ {price_text}"
+    if recommendation == "Buy":
+        zone = f"Rp{recommendation_price_low:,.0f} - Rp{recommendation_price_high:,.0f}" \
+            if recommendation_price_low is not None and recommendation_price_high is not None \
+            else "tidak tersedia"
+        stop_loss_text = f"Rp{stop_loss:,.0f}" if stop_loss is not None else "tidak tersedia"
+        message += f" | Entry zone: {zone} | Stop loss: {stop_loss_text}"
+    elif recommendation in ("Avoid", "Sell") and notes:
+        message += f" | Alasan: {notes}"
+    return message
+
+
 def create_signal(watchlist_name, ticker, current_price, trend_status,
                    support_level, support_level_2, resistance_level,
                    support_level_3=None, resistance_level_2=None,
@@ -29,6 +50,7 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
     from fd_trade.utils.price_data import get_pivot_points, check_confluence
     from fd_trade.utils.price_data import get_nearest_level, get_volume_confirmation
     from fd_trade.utils.price_data import PROXIMITY_THRESHOLD_PCT, VOLUME_HIGH_RATIO, VOLUME_LOW_RATIO
+    from fd_trade.utils.telegram import send_telegram_notification
 
     try:
         settings = frappe.get_single("Trading Account Settings")
@@ -93,6 +115,22 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
         if notes:
             confluence_text = f"{confluence_text} | {notes}"
 
+        previous_signal = None
+        try:
+            previous_signals = frappe.get_all(
+                "Watchlist Signal",
+                filters={"ticker": ticker},
+                fields=["recommendation"],
+                order_by="timestamp desc",
+                limit=1,
+            )
+            previous_signal = previous_signals[0] if previous_signals else None
+        except Exception as e:
+            frappe.log_error(
+                f"Gagal membaca signal sebelumnya untuk {ticker}: {e}",
+                "FD-Trade Watchlist Signal Notification",
+            )
+
         signal = frappe.get_doc({
             "doctype": "Watchlist Signal",
             "watchlist": watchlist_name,
@@ -126,6 +164,25 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
         })
         signal.insert(ignore_permissions=True)
         frappe.db.commit()
+        if previous_signal:
+            try:
+                notification = _build_recommendation_change_message(
+                    ticker=ticker,
+                    previous_recommendation=previous_signal.recommendation,
+                    recommendation=rec.get("recommendation"),
+                    current_price=current_price,
+                    recommendation_price_low=rec.get("recommendation_price_low"),
+                    recommendation_price_high=rec.get("recommendation_price_high"),
+                    stop_loss=rec.get("stop_loss"),
+                    notes=notes,
+                )
+                if notification:
+                    send_telegram_notification(notification)
+            except Exception as e:
+                frappe.log_error(
+                    f"Gagal mengirim perubahan signal untuk {ticker}: {e}",
+                    "FD-Trade Watchlist Signal Notification",
+                )
         return signal
 
     except Exception as e:

@@ -3,7 +3,10 @@
 
 from inspect import signature
 
-from fd_trade.fd_trade.doctype.watchlist_signal.watchlist_signal import create_signal
+from fd_trade.fd_trade.doctype.watchlist_signal.watchlist_signal import (
+	_build_recommendation_change_message,
+	create_signal,
+)
 from frappe.tests import IntegrationTestCase
 
 
@@ -26,3 +29,24 @@ class IntegrationTestWatchlistSignal(IntegrationTestCase):
 		self.assertIn("support_level_3", parameters)
 		self.assertIn("resistance_level_2", parameters)
 		self.assertIn("resistance_level_3", parameters)
+
+	def test_new_ticker_does_not_notify(self):
+		self.assertIsNone(_build_recommendation_change_message("BBCA", None, "Buy", 100))
+
+	def test_same_recommendation_does_not_notify(self):
+		self.assertIsNone(_build_recommendation_change_message("BBCA", "Buy", "Buy", 100))
+
+	def test_changed_buy_recommendation_message(self):
+		message = _build_recommendation_change_message(
+			"BBCA", "Wait", "Buy", 101, 100, 101, 95,
+		)
+		self.assertIn("Sinyal berubah: BBCA Wait -> Buy @ Rp101", message)
+		self.assertIn("Entry zone: Rp100 - Rp101", message)
+		self.assertIn("Stop loss: Rp95", message)
+
+	def test_changed_sell_recommendation_includes_reason(self):
+		message = _build_recommendation_change_message(
+			"BBCA", "Buy", "Sell", 110, notes="Mendekati resistance."
+		)
+		self.assertIn("Sinyal berubah: BBCA Buy -> Sell @ Rp110", message)
+		self.assertIn("Alasan: Mendekati resistance.", message)
