@@ -64,6 +64,18 @@ class Watchlist(Document):
             # ulang oleh create_signal() di on_update(), hindari fetch dobel.
             self._pending_sr_history = sr_result.get("history")
 
+            # BUG FIX (19 Sep 2026): volume_status tidak pernah diisi untuk
+            # Watchlist -- sebelumnya get_volume_confirmation() hanya
+            # dipanggil dari create_signal() (watchlist_signal.py). Reuse
+            # history dari get_support_resistance() supaya tidak fetch dobel.
+            # Import lokal (bukan ubah baris import atas yang dipakai 3
+            # fungsi berbeda di file ini, utk hindari ambiguitas match).
+            from fd_trade.utils.price_data import get_volume_confirmation
+            vol_result = get_volume_confirmation(self.ticker, history=sr_result.get("history"))
+            if vol_result:
+                self.avg_volume_20d = vol_result.get("avg_volume_20d") or 0
+                self.volume_status = vol_result.get("volume_status")
+
         # BUG FIX (18 Sep 2026): create_signal() TIDAK boleh dipanggil di sini
         # (before_save). Untuk dokumen BARU, self.name sudah ter-set (autoname
         # field:ticker) tapi baris belum ter-INSERT ke DB -- create_signal()
