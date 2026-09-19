@@ -1,90 +1,100 @@
 # FD-Trade — Daftar Fitur
 
+> Terakhir ditulis ulang: 19 September 2026.
+
 ## 1. Fitur yang Sudah Ada & Berfungsi
 
 ### Manajemen Risiko
-- ✅ Position sizing otomatis berdasar % risiko tetap dari modal
+- ✅ Position sizing otomatis via `risk_engine.calculate_position_sizing()`, berdasar % risiko tetap dari modal
 - ✅ Suggested lot otomatis (dibulatkan ke bawah kelipatan 100 lembar)
 - ✅ Peringatan (bukan blokir) kalau posisi aktual melebihi 120% dari risiko yang disarankan
 - ✅ Daily loss limit — blokir trade baru kalau limit harian terlampaui
 - ✅ Consecutive loss circuit breaker — blokir trade baru setelah N kekalahan beruntun
 - ✅ Per-stock exposure limit — blokir kalau eksposur ke satu ticker berlebihan
-- ✅ Total portfolio exposure limit
-- ⚠️ Weekly loss limit — **hanya mengirim peringatan Telegram** (rekomendasi kurangi ukuran 50%), TIDAK memblokir trade baru seperti daily limit. Ini kemungkinan disengaja (soft warning vs hard block), tapi perlu dikonfirmasi apakah ini memang desain yang diinginkan.
-- ⚠️ Monthly circuit breaker — sama, hanya notifikasi "urgent", tidak ada blocking mechanism otomatis di level validasi trade baru.
+- ✅ Total portfolio exposure limit — otomatis memperhitungkan sisa dana dari Trade Journal aktif via `get_open_exposure()`, ikut mempengaruhi lot yang disarankan di Watchlist Signal tanpa logic tambahan
+- ⚠️ Weekly loss limit — hanya kirim peringatan Telegram (rekomendasi kurangi ukuran 50%), tidak memblokir trade baru
+- ⚠️ Monthly circuit breaker — sama, hanya notifikasi "urgent", tidak ada blocking otomatis di validasi trade baru
 
-### Target Profit Otomatis
-- ✅ Perhitungan 3 skenario target (Conservative 1.5R / Moderate 2.5R / Aggressive 4R) otomatis dari jarak Entry-Stop Loss
-- ✅ Opsi "Custom" untuk override manual
-- ✅ Ditampilkan sebagai teks suggestion di field read-only
+### Target Profit & Stop Loss Otomatis
+- ✅ 3 skenario target (Conservative 1.5R / Moderate 2.5R / Aggressive 4R) otomatis dari jarak Entry-Stop Loss, opsi "Custom" untuk override manual
+- ✅ Watchlist Signal: `stop_loss` dihitung otomatis dari `support_level_2` (bukan persentase risk), konsisten dengan `risk_per_share`
 
-### Support & Resistance Otomatis
-- ✅ Kombinasi Swing High/Low (window 5 hari, histori 6 bulan) + Moving Average (MA20/MA50/MA200)
-- ✅ Tersedia baik di Trade Journal maupun Watchlist (tombol "Fetch Support/Resistance")
-- ✅ Detail perhitungan ditampilkan sebagai teks (harga saat ini, swing S/R, tiap MA)
+### Support & Resistance 3-Level Otomatis
+- ✅ S1-S3 dan R1-R3 dari kombinasi Swing High/Low + Moving Average (MA20/MA50/MA200)
+- ✅ Proximity check default 3% (deteksi harga mendekati level S/R)
+- ✅ Validasi volume 20 hari (threshold tinggi >1,5x rata-rata, rendah <0,5x)
+- ✅ Trend classification 5 kategori (Bullish Kuat/Lemah, Sideways, Bearish Lemah/Kuat) berdasar gap% MA20 vs MA50
+- ✅ Tersedia di Trade Journal maupun Watchlist (tombol "Fetch Support/Resistance")
+
+### Konteks Market Regime (IHSG)
+- ✅ IHSG (^JKSE) di-refresh otomatis (scheduler tiap 30 menit jam bursa), disimpan di Trading Account Settings (ihsg_trend, ihsg_ma20/50, ihsg_current_price)
+- ✅ Histori tersimpan di DocType baru "IHSG Signal" dengan 4 regime: Risk-On, Neutral, Risk-Off, Avoid New Entry
+- ⚠️ Regime ini murni informasi — belum mempengaruhi rekomendasi saham individual secara otomatis (riset backtest sedang berjalan untuk memvalidasi apakah layak jadi risk multiplier)
+
+### Price History & Backfill OHLC
+- ✅ DocType Price History (ticker, date, timeframe, OHLCV), backfill penuh untuk semua Watchlist + IHSG
+- ✅ Refresh harian otomatis (16:30 WIB weekday) + cleanup retensi 365 hari (mingguan)
+- ✅ Fondasi untuk chart candlestick dan pattern detection
+
+### Deteksi Pola Chart
+- ✅ 6 pola: Double Bottom/Top, Inverse Head & Shoulders/Head & Shoulders, Cup and Handle/Inverted Cup and Handle (Bullish/Bearish)
+- ✅ Filter anti-false-positive: separasi minimum antar titik pola, kedalaman pola minimum, pilih kandidat by amplitude terbesar+terbaru
+- ✅ Tersimpan di Watchlist Signal (`detected_patterns` JSON, `pattern_summary` teks ringkas), fail-silent, tidak mengubah logic Buy/Sell/Wait/Avoid
+
+### Chart Candlestick Interaktif
+- ✅ Tombol "Lihat Chart" di Watchlist dan Watchlist Signal, render via Lightweight Charts (TradingView, CDN)
+- ✅ Toggle Daily/Hourly (Hourly masih disabled, "segera hadir")
+- ⚠️ Overlay pola chart di atas candlestick — **belum terkonfirmasi muncul**, karena data `detected_patterns` sumbernya field tersimpan (bukan hitung live), dan belum ada Watchlist Signal baru yang berhasil dibuat sejak Pattern Detection deploy
+- ⚠️ Bug tampilan saat ganti ticker tanpa refresh halaman (chart bisa "keluar jalur") — fix sudah ditulis, belum dikonfirmasi
 
 ### Price Alert
-- ✅ Alert terikat wajib ke satu Trade Journal (tidak bisa berdiri sendiri)
-- ✅ Kondisi >= atau <= terhadap trigger price
-- ✅ Auto-fetch ticker dari Trade Journal terkait
-- ✅ Dicek scheduler tiap 15 menit jam bursa, auto-update status jadi "Triggered"
-- ✅ Pesan Telegram mengingatkan delay data 15-20 menit — konfirmasi manual sebelum eksekusi
+- ✅ Alert terikat wajib ke satu Trade Journal
+- ✅ Kondisi >= atau <= terhadap trigger price, dicek scheduler tiap 15 menit jam bursa
+- ✅ Auto-fetch ticker dari Trade Journal terkait, auto-update status "Triggered"
+- ✅ Pesan Telegram mengingatkan delay data 15-20 menit
 
 ### Psikologi Trading
-- ✅ Followed System (checkbox kepatuhan)
-- ✅ FOMO, Revenge (checkbox)
-- ✅ Emotion, Mistake, Lesson (teks bebas)
-- ✅ Compliance rate dihitung otomatis di review harian (% trade yang followed_system)
+- ✅ Followed System, FOMO, Revenge (checkbox), Emotion/Mistake/Lesson (teks bebas)
+- ✅ Compliance rate dihitung otomatis di review harian
 
 ### Screening Sinyal Informal
-- ✅ Signal Source terpisah dari Trade Journal — tidak bisa langsung jadi entry tanpa proses screening manual
-- ✅ Status lifecycle: New → Screening → Rejected / Promoted to Watchlist
-- ✅ Reliability score (field ada, read-only) — namun **belum ada logic yang mengisi nilainya** (lihat bagian "Belum Selesai" di bawah)
+- ✅ Signal Source terpisah dari Trade Journal, status lifecycle New → Screening → Rejected/Promoted to Watchlist
+- ⚠️ Reliability score (field ada, read-only) — belum ada logic yang mengisi nilainya
+
+### Watchlist Signal (Rekomendasi Otomatis)
+- ✅ Histori rekomendasi Buy/Sell/Wait/Avoid tiap kali Watchlist di-refresh
+- ✅ Kolom gabungan "Recom B/S" di list view: Buy → harga Buy (hijau) + Stop Loss; Sell → harga Sell (merah) saja tanpa SL; Wait/Avoid → kosong
+- ✅ Warna list view sesuai recommendation dan trend_status
+- ✅ `linked_trade` (opsional) untuk mengaitkan ke Trade Journal hasil eksekusi
+- ⚠️ `sizing_limiting_factor` dihitung tapi tidak pernah tersimpan (field belum ada di skema + `create_signal()` tidak membaca key ini) — lihat BUG #8
 
 ### Analisis Broker Flow (Bandarmologi)
 - ✅ Import dari Excel (copy-paste dari Stockbit) dengan parsing posisi cell tetap
-- ✅ Auto-parsing angka dengan suffix B/M/K dan koma ribuan
-- ✅ Insight otomatis: label distribusi/akumulasi besar berdasar ambang ±15% avg_pct
-- ✅ Perbandingan harga saat ini vs average price broker
-- ✅ Child table detail per broker (buy/sell side)
+- ✅ Auto-parsing angka suffix B/M/K dan koma ribuan
+- ✅ Insight otomatis: distribusi/akumulasi besar berdasar ambang ±15% avg_pct
+- ✅ Perbandingan harga saat ini vs average price broker, child table detail per broker
 
 ### Notifikasi
-- ✅ Trade closed
-- ✅ Daily review (jumlah trade, win/loss, total P&L, compliance rate)
-- ✅ Weekly review (win rate, total R, max drawdown, jumlah FOMO/revenge)
-- ✅ Monthly circuit breaker urgent alert
-- ✅ Intraday warning (weekly loss & total exposure)
-- ✅ Price alert triggered
-- ✅ Semua fail-silent (log error, tidak crash proses utama) kalau kredensial/koneksi Telegram bermasalah — desain defensif yang bagus
+- ✅ Trade closed, daily review, weekly review, monthly circuit breaker urgent, intraday warning, price alert triggered
+- ✅ Semua fail-silent (log error, tidak crash) kalau kredensial/koneksi Telegram bermasalah
+- ⚠️ Trade Closed masih terkirim dobel (BUG #1), beberapa pesan masih pakai `\n` literal bukan newline asli (BUG #3 sebagian)
 
-## 2. Fitur yang Terdaftar di Skema Tapi Belum Diimplementasikan
+## 2. Fitur Terdaftar di Skema Tapi Belum Diimplementasikan
 
-Ini bukan bug — field-nya ada dan valid, tapi logic pemakaiannya belum ditulis:
+1. **`risk_per_trade_fast_percent`** (Trading Account Settings) — dimaksudkan untuk mode "fast trading" risiko lebih kecil (0.25% vs 0.5%), belum ada mekanisme pilih mode per trade
+2. **`max_sektor_percent`** (Trading Account Settings) — batas eksposur per sektor (30% default), Trade Journal belum punya field "sektor", belum ada `check_sector_exposure()`
+3. **`reliability_score`** (Signal Source) — belum ada logic pengisian
+4. **`sizing_limiting_factor`** (Watchlist Signal) — dihitung tapi tidak tersimpan (BUG #8)
+5. **Overlay pola di chart** — data sudah ada di skema (`detected_patterns`), tapi belum terverifikasi tampil karena isu trigger create_signal (lihat 05_SESSION_LOG.md)
 
-1. **`risk_per_trade_fast_percent`** (Trading Account Settings) — sepertinya dimaksudkan untuk mode "fast trading" dengan risiko lebih kecil (0.25% vs 0.5% normal), tapi tidak ada mekanisme di Trade Journal untuk memilih mode "fast" vs "normal" per trade, dan `calculate_risk_metrics()` selalu pakai `risk_per_trade_percent` biasa.
+## 3. Ide Pengembangan Lanjutan (Belum Dikerjakan Sama Sekali)
 
-2. **`max_sektor_percent`** (Trading Account Settings) — batas eksposur per sektor (30% default), tapi:
-   - Trade Journal tidak punya field "sektor" sama sekali (hanya Watchlist yang punya field `sector`)
-   - Tidak ada fungsi `check_sector_exposure()` di `trade_journal.py`
-
-3. **`reliability_score`** (Signal Source) — field read-only untuk skor keandalan sumber sinyal, tapi tidak ada logic apapun (manual maupun otomatis) yang menghitung/mengisi nilai ini.
-
-4. **Field "sektor" di Trade Journal** — tidak ada, padahal dibutuhkan kalau mau mengimplementasikan poin #2 di atas.
-
-## 3. Ide Pengembangan Lanjutan (Saran, Belum Ada Sama Sekali)
-
-Sebagai trader-developer, ini beberapa hal yang menurut saya akan menambah nilai signifikan:
-
-1. **Dashboard equity curve** — grafik ekuitas berjalan dari akumulasi `result_rp`, akan sangat membantu melihat drawdown visual dibanding hanya baca angka di notifikasi mingguan.
-
-2. **Expectancy calculation** — dengan data win rate + average win + average loss yang sudah ada di sistem, expectancy per-R (`(win% × avg_win_R) - (loss% × avg_loss_R)`) adalah metrik jauh lebih berguna daripada sekadar win rate untuk menilai apakah sistem trading benar-benar profitable secara statistik.
-
-3. **Correlation/sektor exposure real** — melengkapi `max_sektor_percent` yang sudah ada di settings tapi belum aktif (lihat bagian 2 di atas), termasuk field sektor di Trade Journal.
-
-4. **Auto-mode "Fast Trading"** — Select field di Trade Journal untuk pilih "Normal" atau "Fast", yang otomatis switch risk percent antara `risk_per_trade_percent` dan `risk_per_trade_fast_percent`.
-
-5. **Backtesting kualitatif dari histori Signal Source** — tracking berapa persen sinyal dari tiap `source_name` yang akhirnya profitable setelah di-promote ke Watchlist lalu jadi Trade Journal — ini akan mengisi `reliability_score` secara otomatis dan objektif, bukan manual.
-
-6. **Report/print format khusus** untuk review mingguan/bulanan (saat ini hanya Telegram, tidak ada versi PDF/print yang bisa diarsipkan formal).
-
-7. **Validasi struktur Excel sebelum parsing** di `import_from_excel` — cek dulu apakah cell tertentu memang berisi header yang diharapkan sebelum mulai baca data, supaya gagal cepat dengan pesan jelas kalau format berubah, bukan diam-diam salah baca.
+1. **Fase D — Dashboard dengan chart IHSG** — direncanakan sejak awal, belum ada implementasi
+2. **Dashboard equity curve** — grafik ekuitas berjalan dari akumulasi `result_rp`
+3. **Expectancy calculation** — `(win% × avg_win_R) - (loss% × avg_loss_R)`, metrik lebih berguna dari win rate saja
+4. **Regime IHSG sebagai risk multiplier** — sedang diriset lewat backtest (v11.x), belum ada keputusan final soal implementasi ke `risk_engine.py`
+5. **Correlation/sektor exposure real** — melengkapi `max_sektor_percent`
+6. **Auto-mode "Fast Trading"** — Select field switch `risk_per_trade_percent` vs `risk_per_trade_fast_percent`
+7. **Backtesting kualitatif Signal Source** — isi `reliability_score` otomatis dari histori profit sinyal yang di-promote
+8. **Report/print format** untuk review mingguan/bulanan (saat ini hanya Telegram)
+9. **Validasi struktur Excel sebelum parsing** di `import_from_excel` — cek header sebelum baca data

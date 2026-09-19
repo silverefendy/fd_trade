@@ -117,7 +117,7 @@ frappe.listview_settings["Watchlist"] = {
         listview.page.add_inner_button("Lihat Chart", () => {
             const selected = listview.get_checked_items();
             if (!selected.length) return frappe.msgprint("Pilih satu ticker Watchlist terlebih dahulu.");
-            window.fd_trade_open_price_chart(selected[0].ticker);
+            window.fd_trade_open_price_chart(selected[0].name);
         });
 
         listview.page.add_inner_button("Refresh Semua Harga", () => {

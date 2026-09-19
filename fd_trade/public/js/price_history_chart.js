@@ -19,11 +19,12 @@
                 {fieldtype: "Int", fieldname: "lookback_days", label: "Lookback (hari)", default: 90}
             ],
             primary_action_label: "Refresh",
-            primary_action: () => render(dialog, ticker)
+            primary_action: () => loadCharts(() => render(dialog, ticker))
         });
         dialog.show();
         dialog.set_value("timeframe", "Daily");
-        render(dialog, ticker);
+        dialog.fields_dict.chart_area.$wrapper.html('<p class="text-muted">Memuat library chart...</p>');
+        loadCharts(() => render(dialog, ticker));
     }
 
     function render(dialog, ticker) {
@@ -86,6 +87,10 @@
             line.setMarkers((pattern.key_points || []).map(point => ({time: point.date, position: pattern.direction === "Bullish" ? "belowBar" : "aboveBar", color: color, shape: "circle", text: `${pattern.pattern_name}${tentative ? " (tentative)" : ""}`})));
         });
         chart.timeScale().fitContent();
+        setTimeout(() => {
+            chart.applyOptions({width: container.clientWidth || 850});
+            chart.timeScale().fitContent();
+        }, 150);
     }
 
     window.fd_trade_open_price_chart = open_chart;
