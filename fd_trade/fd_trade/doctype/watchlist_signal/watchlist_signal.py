@@ -124,9 +124,16 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
                 "Price History",
                 filters={"ticker": ticker, "timeframe": "Daily"},
                 fields=["date", "open", "high", "low", "close", "volume"],
-                order_by="date asc",
+                order_by="date desc",
                 limit_page_length=90,
             )
+            # BUG FIX (19 Sep 2026): order_by "date asc" + limit 90 sebelumnya
+            # mengambil 90 hari PALING AWAL dari histori (bukan 90 hari
+            # terakhir), sehingga pattern detection menganalisis data usang.
+            # Fix: ambil "date desc" limit 90 (90 hari terakhir), lalu balik
+            # urutan ke ascending karena detect_chart_patterns() mengharapkan
+            # data terurut kronologis maju.
+            price_history = list(reversed(price_history))
             detected_patterns = detect_chart_patterns(price_history, lookback_days=90)
             pattern_summary = "; ".join(
                 f"{item['status'].capitalize()}: {item['pattern_name']} ({item['direction']}, {item['confidence_level']})"
