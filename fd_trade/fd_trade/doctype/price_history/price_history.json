@@ -1,0 +1,25 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 0,
+ "autoname": "format:{ticker}-{date}-{timeframe}",
+ "creation": "2026-09-19 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["ticker", "date", "timeframe", "open", "high", "low", "close", "volume"],
+ "fields": [
+  {"fieldname": "ticker", "fieldtype": "Data", "label": "Ticker", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "date", "fieldtype": "Date", "label": "Date", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "timeframe", "fieldtype": "Select", "label": "Timeframe", "options": "Daily\nHourly", "default": "Daily", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "open", "fieldtype": "Currency", "label": "Open", "hide_currency_symbol": "1"},
+  {"fieldname": "high", "fieldtype": "Currency", "label": "High", "hide_currency_symbol": "1"},
+  {"fieldname": "low", "fieldtype": "Currency", "label": "Low", "hide_currency_symbol": "1"},
+  {"fieldname": "close", "fieldtype": "Currency", "label": "Close", "in_list_view": 1, "hide_currency_symbol": "1"},
+  {"fieldname": "volume", "fieldtype": "Float", "label": "Volume", "in_list_view": 1}
+ ],
+ "module": "FD-Trade",
+ "name": "Price History",
+ "permissions": [{"create": 1, "delete": 1, "read": 1, "role": "System Manager", "write": 1}, {"create": 1, "read": 1, "role": "All"}],
+ "sort_field": "date",
+ "sort_order": "DESC"
+}

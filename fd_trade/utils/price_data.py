@@ -73,6 +73,32 @@ def get_current_ohlc(ticker):
         frappe.log_error(f"Failed to fetch OHLC for {ticker}: {e}", "FD-Trade Price Data")
         return None
 
+
+def get_daily_ohlc_history(ticker, period="1y"):
+    """Ambil histori OHLCV harian dari yfinance secara fail-silent."""
+    try:
+        full_ticker = ticker if ticker.startswith("^") else f"{ticker}.JK"
+        history = yf.Ticker(full_ticker).history(period=period)
+        if history is None or history.empty:
+            frappe.log_error(f"No history found for ticker {full_ticker}", "FD-Trade Price History")
+            return None
+
+        rows = []
+        for index, row in history.iterrows():
+            trading_date = index.date().isoformat() if hasattr(index, "date") else str(index)[:10]
+            rows.append({
+                "date": trading_date,
+                "open": round_to_tick(float(row["Open"])),
+                "high": round_to_tick(float(row["High"])),
+                "low": round_to_tick(float(row["Low"])),
+                "close": round_to_tick(float(row["Close"])),
+                "volume": float(row["Volume"]) if row["Volume"] is not None else 0,
+            })
+        return rows or None
+    except Exception as e:
+        frappe.log_error(f"get_daily_ohlc_history failed for {ticker}: {e}", "FD-Trade Price History")
+        return None
+
 def get_support_resistance(ticker):
     """Hitung 3 level support & 3 level resistance terdekat, kombinasi
     Swing High/Low + Moving Average.

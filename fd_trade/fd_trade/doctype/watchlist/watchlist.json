@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "ticker",
+  "track_price_history",
   "current_price",
   "ohlc_section",
   "open_price",
@@ -167,6 +168,12 @@
    "label": "Resistance Level 2",
    "read_only": 1,
    "hide_currency_symbol": "1"
+  },
+  {
+   "default": "1",
+   "fieldname": "track_price_history",
+   "fieldtype": "Check",
+   "label": "Simpan Histori Harga (untuk chart)"
   },
   {
    "description": "Level support ketiga (paling jauh dari harga sekarang dibanding Support Level 2).",

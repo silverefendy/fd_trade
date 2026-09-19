@@ -527,3 +527,101 @@ def cleanup_old_ihsg_signals():
         frappe.db.commit()
     except Exception as e:
         frappe.log_error(f"cleanup_old_ihsg_signals failed: {e}", "FD-Trade Scheduled Tasks")
+
+
+def _price_history_tickers(ticker=None):
+    """Return ticker list yang aktif tracking histori, selalu termasuk IHSG."""
+    if ticker:
+        return [ticker.strip().upper() if not ticker.startswith("^") else ticker.strip()]
+    tickers = frappe.get_all(
+        "Watchlist",
+        filters={"track_price_history": 1},
+        pluck="ticker",
+    )
+    return list(dict.fromkeys([value for value in tickers if value] + ["^JKSE"]))
+
+
+def _store_price_history_for_ticker(ticker, period="1y"):
+    """Fetch dan simpan histori satu ticker; error per ticker tidak propagasi."""
+    from fd_trade.utils.price_data import get_daily_ohlc_history
+
+    rows = get_daily_ohlc_history(ticker, period=period)
+    if not rows:
+        return 0
+
+    inserted = 0
+    for row in rows:
+        try:
+            filters = {"ticker": ticker, "date": row["date"], "timeframe": "Daily"}
+            if frappe.db.exists("Price History", filters):
+                continue
+            frappe.get_doc({
+                "doctype": "Price History",
+                "ticker": ticker,
+                "date": row["date"],
+                "timeframe": "Daily",
+                "open": row["open"],
+                "high": row["high"],
+                "low": row["low"],
+                "close": row["close"],
+                "volume": row["volume"],
+            }).insert(ignore_permissions=True)
+            inserted += 1
+        except Exception as e:
+            frappe.log_error(
+                f"Price History row gagal untuk {ticker} {row.get('date')}: {e}",
+                "FD-Trade Price History",
+            )
+    return inserted
+
+
+@frappe.whitelist()
+def backfill_price_history(ticker=None):
+    """Backfill manual histori satu tahun untuk ticker tracking dan IHSG."""
+    try:
+        total_inserted = 0
+        for current_ticker in _price_history_tickers(ticker):
+            try:
+                total_inserted += _store_price_history_for_ticker(current_ticker, period="1y")
+            except Exception as e:
+                frappe.log_error(f"Backfill gagal untuk {current_ticker}: {e}", "FD-Trade Price History")
+        frappe.db.commit()
+        return {"tickers": len(_price_history_tickers(ticker)), "inserted": total_inserted}
+    except Exception as e:
+        frappe.log_error(f"backfill_price_history failed: {e}", "FD-Trade Price History")
+        return None
+
+
+def refresh_price_history_daily():
+    """Tambahkan bar OHLCV satu-dua hari terakhir untuk ticker tracking."""
+    try:
+        total_inserted = 0
+        for current_ticker in _price_history_tickers():
+            try:
+                total_inserted += _store_price_history_for_ticker(current_ticker, period="5d")
+            except Exception as e:
+                frappe.log_error(f"Refresh harian gagal untuk {current_ticker}: {e}", "FD-Trade Price History")
+        frappe.db.commit()
+        return total_inserted
+    except Exception as e:
+        frappe.log_error(f"refresh_price_history_daily failed: {e}", "FD-Trade Price History")
+
+
+def cleanup_old_price_history():
+    """Hapus Price History yang lebih tua dari 365 hari."""
+    try:
+        cutoff = frappe.utils.add_days(frappe.utils.today(), -365)
+        old_rows = frappe.get_all(
+            "Price History",
+            filters={"date": ["<", cutoff]},
+            pluck="name",
+        )
+        for name in old_rows:
+            try:
+                frappe.delete_doc("Price History", name, ignore_permissions=True, force=True)
+            except Exception as e:
+                frappe.log_error(f"Cleanup gagal untuk {name}: {e}", "FD-Trade Price History")
+        frappe.db.commit()
+        frappe.logger().info(f"cleanup_old_price_history done. Dihapus: {len(old_rows)} record.")
+    except Exception as e:
+        frappe.log_error(f"cleanup_old_price_history failed: {e}", "FD-Trade Price History")

@@ -33,12 +33,12 @@ fixtures = [
         "filters": [["doc_type", "in", [
             "Watchlist", "Watchlist Signal", "Trade Journal",
             "Price Alert", "Broker Summary", "Broker Summary Detail",
-            "Signal Source", "Trading Account Settings", "IHSG Signal"
+            "Signal Source", "Trading Account Settings", "IHSG Signal", "Price History"
         ]]]
     },
     {
         "doctype": "List View Settings",
-        "filters": [["name", "in", ["Watchlist", "Watchlist Signal", "Trade Journal", "Price Alert", "Broker Summary", "Signal Source", "IHSG Signal"]]]
+        "filters": [["name", "in", ["Watchlist", "Watchlist Signal", "Trade Journal", "Price Alert", "Broker Summary", "Signal Source", "IHSG Signal", "Price History"]]]
     }
 ]
 
@@ -89,6 +89,12 @@ scheduler_events = {
         "0 17 * * 1-5": [
             "fd_trade.tasks.cleanup_old_watchlist_signals",
             "fd_trade.tasks.cleanup_old_ihsg_signals"
+        ],
+        "30 16 * * 1-5": [
+            "fd_trade.tasks.refresh_price_history_daily"
+        ],
+        "0 18 * * 5": [
+            "fd_trade.tasks.cleanup_old_price_history"
         ],
         "0 17 * * 5": [
             "fd_trade.tasks.weekly_review_notification"
