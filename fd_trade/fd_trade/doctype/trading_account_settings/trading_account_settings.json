@@ -22,6 +22,10 @@
   "ihsg_column_break",
   "ihsg_ma20",
   "ihsg_ma50",
+  "ihsg_support",
+  "ihsg_support_2",
+  "ihsg_resistance",
+  "ihsg_resistance_2",
   "ihsg_last_updated",
   "signal_thresholds_section",
   "proximity_threshold_pct",
@@ -128,6 +132,30 @@
    "fieldname": "ihsg_ma50",
    "fieldtype": "Float",
    "label": "IHSG MA50",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ihsg_support",
+   "fieldtype": "Float",
+   "label": "IHSG Support",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ihsg_support_2",
+   "fieldtype": "Float",
+   "label": "IHSG Support 2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ihsg_resistance",
+   "fieldtype": "Float",
+   "label": "IHSG Resistance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ihsg_resistance_2",
+   "fieldtype": "Float",
+   "label": "IHSG Resistance 2",
    "read_only": 1
   },
   {

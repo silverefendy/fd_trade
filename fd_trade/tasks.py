@@ -462,6 +462,13 @@ def refresh_ihsg_trend():
             settings.ihsg_trend = result.get("trend")
             settings.ihsg_ma20 = result.get("ma20")
             settings.ihsg_ma50 = result.get("ma50")
+            # BUG FIX (19 Sep 2026): S/R IHSG sebelumnya dihitung tapi dibuang.
+            # Field ihsg_support/_2, ihsg_resistance/_2 baru ditambahkan ke
+            # Trading Account Settings via add_ihsg_sr_fields.py (schema).
+            settings.ihsg_support = result.get("support_level")
+            settings.ihsg_support_2 = result.get("support_level_2")
+            settings.ihsg_resistance = result.get("resistance_level")
+            settings.ihsg_resistance_2 = result.get("resistance_level_2")
             regime = calculate_market_regime(
                 result.get("trend"), price, result.get("ma20"), result.get("ma50")
             )
