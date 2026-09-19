@@ -28,6 +28,8 @@
   "take_profit_next",
   "take_profit_extended",
   "ihsg_context",
+  "detected_patterns",
+  "pattern_summary",
   "risk_amount",
   "risk_per_share",
   "suggested_lot",
@@ -187,6 +189,19 @@
    "fieldname": "ihsg_context",
    "fieldtype": "Data",
    "label": "Konteks IHSG",
+   "read_only": 1
+  },
+  {
+   "fieldname": "detected_patterns",
+   "fieldtype": "Long Text",
+   "label": "Detected Patterns",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pattern_summary",
+   "fieldtype": "Small Text",
+   "label": "Pattern Summary",
+   "in_list_view": 1,
    "read_only": 1
   },
   {

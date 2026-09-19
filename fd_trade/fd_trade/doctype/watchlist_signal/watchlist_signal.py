@@ -46,6 +46,7 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
     fetch harga yang sedang berjalan (konsisten dengan filosofi fail-silent
     aplikasi ini untuk hal non-kritikal)."""
     import frappe
+    import json
     from fd_trade.utils.price_data import calculate_recommendation
     from fd_trade.utils.price_data import get_pivot_points, check_confluence
     from fd_trade.utils.price_data import get_nearest_level, get_volume_confirmation
@@ -115,6 +116,25 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
         if notes:
             confluence_text = f"{confluence_text} | {notes}"
 
+        detected_patterns = []
+        pattern_summary = ""
+        try:
+            from fd_trade.utils.pattern_detection import detect_chart_patterns
+            price_history = frappe.get_all(
+                "Price History",
+                filters={"ticker": ticker, "timeframe": "Daily"},
+                fields=["date", "open", "high", "low", "close", "volume"],
+                order_by="date asc",
+                limit_page_length=90,
+            )
+            detected_patterns = detect_chart_patterns(price_history, lookback_days=90)
+            pattern_summary = "; ".join(
+                f"{item['status'].capitalize()}: {item['pattern_name']} ({item['direction']}, {item['confidence_level']})"
+                for item in detected_patterns
+            )
+        except Exception as e:
+            frappe.log_error(f"Pattern detection failed for {ticker}: {e}", "FD-Trade Pattern Detection")
+
         previous_signal = None
         try:
             previous_signals = frappe.get_all(
@@ -157,6 +177,8 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
                 f"{ihsg_latest[0].market_regime} ({ihsg_latest[0].trend_status})"
                 if ihsg_latest else ihsg_trend
             ),
+            "detected_patterns": json.dumps(detected_patterns, ensure_ascii=False),
+            "pattern_summary": pattern_summary,
             "risk_amount": rec.get("risk_amount"),
             "risk_per_share": rec.get("risk_per_share"),
             "suggested_lot": rec.get("suggested_lot"),

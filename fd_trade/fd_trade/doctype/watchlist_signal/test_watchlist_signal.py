@@ -72,7 +72,7 @@ class IntegrationTestWatchlistSignal(IntegrationTestCase):
 		]
 		previous_queries = {"count": 0}
 		def get_all_for_signal(doctype, **kwargs):
-			if doctype == "IHSG Signal":
+			if doctype in ("IHSG Signal", "Price History"):
 				return []
 			previous_queries["count"] += 1
 			return [] if previous_queries["count"] == 1 else [frappe._dict({"recommendation": "Buy"})]
@@ -86,4 +86,5 @@ class IntegrationTestWatchlistSignal(IntegrationTestCase):
 		telegram.assert_called_once()
 		self.assertIn("BBCA Buy -> Sell", telegram.call_args.args[0])
 		self.assertEqual(previous_queries["count"], 2)
-		self.assertEqual(get_all.call_args_list[1].kwargs["filters"], {"ticker": "BBCA"})
+		previous_calls = [call for call in get_all.call_args_list if call.args and call.args[0] == "Watchlist Signal"]
+		self.assertEqual(previous_calls[0].kwargs["filters"], {"ticker": "BBCA"})

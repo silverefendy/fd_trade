@@ -7,6 +7,13 @@ function fmtNum(value) {
 }
 
 frappe.listview_settings["Watchlist Signal"] = {
+    onload: function (listview) {
+        listview.page.add_inner_button("Lihat Chart", () => {
+            const selected = listview.get_checked_items();
+            if (!selected.length) return frappe.msgprint("Pilih satu signal terlebih dahulu.");
+            window.fd_trade_open_price_chart(selected[0].ticker);
+        });
+    },
     formatters: {
         recommendation: (value) => {
             if (!value) return "";

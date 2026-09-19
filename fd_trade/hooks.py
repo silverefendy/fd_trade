@@ -12,6 +12,7 @@ app_logo_url = "/assets/fd_trade/images/fd_trade-logo.svg"
 app_color = "grey"
 app_email = "silverefendy@users.noreply.github.com"
 app_license = "MIT"
+app_include_js = ["/assets/fd_trade/js/price_history_chart.js"]
 
 add_to_apps_screen = [
     {

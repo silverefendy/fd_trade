@@ -1,4 +1,11 @@
 frappe.listview_settings["Watchlist"] = {
+    onload: function (listview) {
+        listview.page.add_inner_button("Lihat Chart", () => {
+            const selected = listview.get_checked_items();
+            if (!selected.length) return frappe.msgprint("Pilih satu ticker Watchlist terlebih dahulu.");
+            window.fd_trade_open_price_chart(selected[0].ticker);
+        });
+    },
     formatters: {
         // === Harga OHLC & S/R: warna teks saja, tanpa background,
         //     supaya tidak terasa penuh warna di seluruh tabel ===
