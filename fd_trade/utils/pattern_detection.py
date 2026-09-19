@@ -1,5 +1,11 @@
 """Deteksi pola chart berbasis swing point dari data Price History."""
 
+MIN_DOUBLE_SEPARATION_DAYS = 15
+MIN_SHOULDER_SEPARATION_DAYS = 10
+MIN_PATTERN_DEPTH_PCT = 0.05
+SIMILAR_DOUBLE_PCT = 0.03
+SIMILAR_SHOULDER_PCT = 0.05
+
 
 def _safe_float(value):
     try:
@@ -17,9 +23,9 @@ def _swing_points(data, window):
             continue
         highs = [_safe_float(row.get("high")) for row in data[index - window:index + window + 1]]
         lows = [_safe_float(row.get("low")) for row in data[index - window:index + window + 1]]
-        if all(value is not None for value in highs) and high == max(highs):
+        if all(value is not None for value in highs) and high == max(highs) and highs.count(high) == 1:
             peaks.append((index, high, "peak"))
-        if all(value is not None for value in lows) and low == min(lows):
+        if all(value is not None for value in lows) and low == min(lows) and lows.count(low) == 1:
             troughs.append((index, low, "trough"))
     return peaks, troughs
 
@@ -37,23 +43,29 @@ def _double_pattern(data, peaks, troughs, bullish):
     opposite = peaks if bullish else troughs
     name = "Double Bottom" if bullish else "Double Top"
     direction = "Bullish" if bullish else "Bearish"
+    candidates = []
     for left, right in zip(points, points[1:]):
-        if right[0] <= left[0]:
+        if right[0] - left[0] < MIN_DOUBLE_SEPARATION_DAYS:
             continue
         between = [item for item in opposite if left[0] < item[0] < right[0]]
-        if not between or not _similar(left[1], right[1], 0.03):
+        if not between or not _similar(left[1], right[1], SIMILAR_DOUBLE_PCT):
             continue
         neckline = max(item[1] for item in between) if bullish else min(item[1] for item in between)
+        average_point = (left[1] + right[1]) / 2
+        depth = abs(neckline - average_point) / max(abs(average_point), 1e-9)
+        if depth < MIN_PATTERN_DEPTH_PCT:
+            continue
         close = _safe_float(data[-1].get("close"))
         confirmed = close is not None and ((close >= neckline if bullish else close <= neckline))
         key_points = [_point(data, left[0], left[1], left[2]), _point(data, between[0][0], neckline, "neckline"), _point(data, right[0], right[1], right[2])]
-        return {
+        candidates.append({
             "pattern_name": name, "direction": direction, "confidence_level": "confirmed",
             "key_points": key_points, "neckline_price": float(neckline),
             "status": "confirmed" if confirmed else "forming",
             "notes": f"Dua {'lembah' if bullish else 'puncak'} mirip terdeteksi; neckline {'sudah ditembus' if confirmed else 'belum dikonfirmasi'}.",
-        }
-    return None
+            "_amplitude": depth, "_latest_index": right[0],
+        })
+    return max(candidates, key=lambda item: (item["_amplitude"], item["_latest_index"])) if candidates else None
 
 
 def _shoulder_pattern(data, peaks, troughs, bullish):
@@ -61,22 +73,29 @@ def _shoulder_pattern(data, peaks, troughs, bullish):
     opposite = peaks if bullish else troughs
     name = "Inverse Head and Shoulders" if bullish else "Head and Shoulders"
     direction = "Bullish" if bullish else "Bearish"
+    candidates = []
     for left, head, right in zip(points, points[1:], points[2:]):
-        shoulders_similar = _similar(left[1], right[1], 0.05)
+        if head[0] - left[0] < MIN_SHOULDER_SEPARATION_DAYS or right[0] - head[0] < MIN_SHOULDER_SEPARATION_DAYS:
+            continue
+        shoulders_similar = _similar(left[1], right[1], SIMILAR_SHOULDER_PCT)
         head_valid = head[1] < left[1] and head[1] < right[1] if bullish else head[1] > left[1] and head[1] > right[1]
         between = [item for item in opposite if left[0] < item[0] < right[0]]
         if not shoulders_similar or not head_valid or len(between) < 2:
             continue
         neckline = (between[0][1] + between[-1][1]) / 2
+        depth = abs(neckline - head[1]) / max(abs(head[1]), 1e-9)
+        if depth < MIN_PATTERN_DEPTH_PCT:
+            continue
         close = _safe_float(data[-1].get("close"))
         confirmed = close is not None and ((close >= neckline if bullish else close <= neckline))
-        return {
+        candidates.append({
             "pattern_name": name, "direction": direction, "confidence_level": "confirmed",
             "key_points": [_point(data, left[0], left[1], left[2]), _point(data, head[0], head[1], head[2]), _point(data, right[0], right[1], right[2]), _point(data, between[0][0], neckline, "neckline"), _point(data, between[-1][0], neckline, "neckline")],
             "neckline_price": float(neckline), "status": "confirmed" if confirmed else "forming",
             "notes": f"Tiga {'lembah' if bullish else 'puncak'} berurutan dengan kepala yang {'lebih dalam' if bullish else 'lebih tinggi'}.",
-        }
-    return None
+            "_amplitude": depth, "_latest_index": right[0],
+        })
+    return max(candidates, key=lambda item: (item["_amplitude"], item["_latest_index"])) if candidates else None
 
 
 def _cup_pattern(data, bullish):
@@ -111,6 +130,7 @@ def _cup_pattern(data, bullish):
         "neckline_price": float(max(start, end) if bullish else min(start, end)),
         "status": "confirmed" if breakout else "forming",
         "notes": f"Pola {name} terdeteksi; confidence {confidence}.",
+        "_amplitude": depth, "_latest_index": len(data) - 1,
     }
 
 
@@ -139,4 +159,16 @@ def detect_chart_patterns(ohlc_data, lookback_days=90):
                 results.append(result)
         except Exception:
             continue
+    # Satu snapshot tidak boleh menampilkan pola bullish dan bearish yang
+    # sama-sama aktif. Pilih kandidat yang paling kuat, lalu paling baru.
+    directions = {item["direction"] for item in results}
+    if len(directions) > 1:
+        results = [max(results, key=lambda item: (
+            item.get("status") == "confirmed",
+            item.get("_amplitude", 0),
+            item.get("_latest_index", 0),
+        ))]
+    for item in results:
+        item.pop("_amplitude", None)
+        item.pop("_latest_index", None)
     return results

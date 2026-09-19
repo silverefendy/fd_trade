@@ -22,16 +22,24 @@ class TestPatternDetection(unittest.TestCase):
         self.assertEqual(matches[0]["confidence_level"], confidence)
 
     def test_double_bottom(self):
-        self.assert_pattern([100, 90, 110, 92, 108, 105, 104], "Double Bottom", "Bullish")
+        closes = [100] * 35
+        closes[5], closes[14], closes[25], closes[-1] = 90, 110, 92, 100
+        self.assert_pattern(closes, "Double Bottom", "Bullish")
 
     def test_double_top(self):
-        self.assert_pattern([100, 110, 90, 108, 92, 95, 96], "Double Top", "Bearish")
+        closes = [100] * 35
+        closes[5], closes[14], closes[25], closes[-1] = 110, 90, 108, 100
+        self.assert_pattern(closes, "Double Top", "Bearish")
 
     def test_inverse_head_and_shoulders(self):
-        self.assert_pattern([100, 90, 100, 75, 100, 91, 100, 102], "Inverse Head and Shoulders", "Bullish")
+        closes = [100] * 35
+        closes[5], closes[10], closes[16], closes[22], closes[27], closes[-1] = 90, 105, 75, 105, 91, 102
+        self.assert_pattern(closes, "Inverse Head and Shoulders", "Bullish")
 
     def test_head_and_shoulders(self):
-        self.assert_pattern([100, 110, 100, 125, 100, 109, 100, 98], "Head and Shoulders", "Bearish")
+        closes = [100] * 35
+        closes[5], closes[10], closes[16], closes[22], closes[27], closes[-1] = 110, 95, 125, 95, 109, 98
+        self.assert_pattern(closes, "Head and Shoulders", "Bearish")
 
     def test_cup_and_handle_is_at_most_tentative(self):
         closes = [100, 98, 95, 91, 87, 84, 81, 79, 78, 78, 79, 81, 84, 88, 92, 96, 99, 100, 99, 98, 97, 98, 99, 99, 100, 100, 100, 100, 100, 100]
@@ -49,4 +57,3 @@ class TestPatternDetection(unittest.TestCase):
 
     def test_flat_data_has_no_patterns(self):
         self.assertEqual(detect_chart_patterns(make_rows([100] * 90)), [])
-
