@@ -4,32 +4,53 @@
 
 ---
 
-## Sesi: Sabtu, 19 September 2026 (Review Codebase via Claude — Tanpa Perubahan Kode)
+## Sesi: Sabtu, 19 September 2026 (Review + Patch Batch — Proximity Threshold, Notif Dobel, Result R Otomatis, Excel Negatif, Arsip Script Lama)
 
 ### Konteks
-Sesi ini adalah **review/orientasi ulang** terhadap kondisi repo terkini (dikirim sebagai kumpulan file source lengkap ke Claude), dibandingkan terhadap rangkuman sesi lama tertanggal 16 September 2026 malam yang sempat dipakai sebagai referensi. Tujuannya memastikan asisten (Claude) bekerja dari kondisi kode yang benar-benar terkini, bukan rangkuman yang sudah kedaluwarsa.
+Lanjutan dari review pagi hari ini. Setelah audit ulang lebih teliti, ditemukan bahwa BUG #8 dan sisa BUG #3 (generate_insight_notes) ternyata SUDAH resolved di kode aktual -- koreksi dari klaim awal sesi ini yang salah baca. Juga ditemukan fitur warna list view Watchlist Signal ternyata SUDAH ada sejak sesi sebelumnya (koreksi kedua, sempat salah bilang belum dibuat).
 
-### Temuan Utama
-1. Rangkuman lama (16 Sep malam) menandai BUG #1, #2, #4 sebagai "belum dipatch" — ternyata **semuanya sudah di-resolve** per commit `76bf9fba` (audit 17 Sep 2026, tercatat di `03_BUGS.md`). Tidak ada tindakan baru diperlukan untuk ketiga bug ini.
-2. BUG #3 (newline literal) sudah diperbaiki untuk `daily_review_notification`, `weekly_review_notification`, `check_intraday_conditions`, dan `notify_on_close` (`trade_journal.py`). **Masih tersisa** di `generate_insight_notes()` (`broker_summary.py`) — belum disentuh.
-3. Fitur warna list view untuk `recommendation` di Watchlist Signal (Buy hijau/Sell merah/Avoid hitam/Wait abu-abu) — **masih belum dibuat**. Tidak ditemukan file `watchlist_signal_list.js` dengan formatter warna di kode yang direview.
-4. Sidebar "Watchlist Signal" & "Stock Group" yang tidak muncul di kotak DocTypes — status tidak berubah, masih belum terpecahkan, masih prioritas rendah sesuai keputusan sesi sebelumnya.
-5. BUG #5 (`setup_price_alert.sh` masih di root repo, risiko silent overwrite skema), BUG #6 (`risk_r` selalu 1.0), dan BUG #7 (`risk_per_trade_fast_percent`/`max_sektor_percent` belum dipakai) — semua masih terbuka, belum ada keputusan desain baru.
-6. BUG #8 (ditemukan sesi 17 Sep, dikonfirmasi masih terbuka): `sizing_limiting_factor` dihitung dengan benar di `calculate_recommendation()` tapi tidak pernah tersimpan ke `Watchlist Signal` — dua penyebab sekaligus: field belum ada di skema `watchlist_signal.json`, dan `create_signal()` tidak membaca key `sizing_limiting_factor` dari hasil `rec`.
-7. `docs/02_SUMMARY.md` dan `docs/04_FITUR.md` dikonfirmasi ulang masih outdated — belum mencakup arsitektur Watchlist Signal, `risk_engine.py`, `round_to_tick()`, atau IHSG trend yang sudah live di kode sejak beberapa sesi lalu.
+### Temuan Baru & Langsung Dipatch (Batch 1 Script)
+Semua dalam 1 script Python (str_replace-style, backup .backup otomatis per file, assert-based supaya gagal keras kalau old_str tidak match), dijalankan user di server, hasil: 5/5 file OK, tidak ada assert error.
+
+1. **BUG #9 (baru) -- Proximity threshold di settings tidak dipakai untuk trigger Buy/Sell.** `calculate_recommendation()` (price_data.py) sebelumnya pakai konstanta hardcoded PROXIMITY_THRESHOLD_PCT, bukan nilai dari Trading Account Settings -- padahal `get_nearest_level()` (untuk label) sudah pakai settings. Fix: tambah parameter `proximity_threshold_pct`, diteruskan dari `create_signal()` (watchlist_signal.py).
+2. **BUG #10 (baru) -- Tombol "Refresh Harga Sekarang" tidak memperbarui Watchlist Signal.** `refresh_current_price` (watchlist.py) hanya update harga, tidak panggil `create_signal()` seperti `fetch_support_resistance`. Fix: ditambahkan panggilan `create_signal()`.
+3. **BUG #11 (baru) -- notify_on_close terkirim ulang tiap kali trade Closed diedit lagi.** Beda dari BUG #1 lama (dobel dalam satu save). Fix: tambah cek `self.has_value_changed("status")` di `on_update()` (trade_journal.py), notif hanya kirim saat transisi Open -> Closed.
+4. **Fitur baru -- `result_r` otomatis.** Sebelumnya manual, rawan human error, padahal dipakai di review harian/mingguan. Fix: dihitung otomatis `(exit_price - entry_price) / risk_per_share` di `calculate_risk_metrics()`, tetap bisa override manual.
+5. **Perbaikan kecil -- `parse_excel_value` tangani format negatif akuntansi `(1.5M)`.** Sebelumnya silent return None (data hilang tanpa error). Fix: deteksi kurung, konversi jadi negatif.
+
+### Klarifikasi Status Bug Lama (Koreksi dari Audit Sebelumnya)
+- **BUG #8** (sizing_limiting_factor tidak tersimpan) -- **RESOLVED**, ternyata field sudah ada di watchlist_signal.json dan create_signal() sudah membacanya. `03_BUGS.md` versi lama masih salah tercatat sebagai belum.
+- **BUG #3 sisa** (generate_insight_notes newline literal) -- **RESOLVED**, sudah pakai f-string `\n` asli dengan comment fix. `03_BUGS.md` versi lama masih salah tercatat sebagai belum.
+- **Warna list view Watchlist Signal** -- ternyata **sudah ada** (`watchlist_signal_list.js` lengkap dengan formatter Buy/Sell/Avoid/Wait), bukan belum dibuat seperti dugaan awal sesi ini.
+
+### BUG #5 -- Diselesaikan
+`setup_price_alert.sh` dipindah (`git mv`) ke `archive/setup_price_alert.sh.DO-NOT-RUN`, tidak lagi berisiko dijalankan ulang tanpa sengaja dan menimpa skema DocType.
+
+### Verifikasi Server
+- `python3 patch_19sep.py` -- 5/5 file OK, backup otomatis dibuat
+- `git mv setup_price_alert.sh archive/setup_price_alert.sh.DO-NOT-RUN` -- OK
+- `bench restart` -- OK (web + workers + scheduler)
+- `bench console` import test (`fd_trade.tasks`, `trade_journal`, `watchlist`, `price_data`) -- OK, tidak ada syntax error
+- Tidak perlu `bench migrate` untuk batch ini -- semua perubahan logic Python murni, tidak ada perubahan skema DocType
 
 ### Tindakan yang Diambil Sesi Ini
-- Tidak ada perubahan kode — sesi ini murni orientasi/audit ulang berbasis file yang dikirim langsung, tanpa akses server.
-- Update `docs/05_SESSION_LOG.md` (file ini).
+- Patch 5 file (lihat di atas)
+- Arsip `setup_price_alert.sh`
+- Update `docs/03_BUGS.md` -- koreksi status BUG #3 & #8 jadi RESOLVED, tambah BUG #9/#10/#11 baru, BUG #5 jadi RESOLVED
+- Update `docs/05_SESSION_LOG.md` (file ini)
 
-### Checklist Prioritas Sesi Berikutnya (Belum Berubah dari Audit 17 Sep, Masih Valid)
-1. Patch BUG #8 (tambah field `sizing_limiting_factor` ke `watchlist_signal.json` + baca di `create_signal()`)
-2. Patch sisa BUG #3 (`generate_insight_notes` di `broker_summary.py`, ganti `\\n` jadi f-string dengan `\n` asli)
-3. Buat file `watchlist_signal_list.js` dengan formatter warna untuk field `recommendation` (Buy hijau `#2e7d32`, Sell merah `#c62828`, Avoid hitam/abu gelap, Wait abu-abu `#9e9e9e`), daftarkan di `hooks.py` -> `doctype_list_js` kalau perlu
-4. Hapus/arsipkan `setup_price_alert.sh` dari root repo (BUG #5)
-5. Diskusi keputusan desain BUG #6 (`risk_r`) dan BUG #7 (`risk_per_trade_fast_percent`, `max_sektor_percent`) — hapus field atau implementasikan fitur yang dimaksud
-6. Tulis ulang `docs/02_SUMMARY.md` dan `docs/04_FITUR.md` supaya mencakup Watchlist Signal, risk_engine, round_to_tick, IHSG trend
-7. Cek ulang sidebar Watchlist Signal/Stock Group kalau masih dianggap perlu
+### BELUM Dikerjakan Sesi Ini
+- Commit & push ke GitHub -- **harus dilakukan segera setelah ini**, belum ada satupun perubahan hari ini yang ter-push
+- BUG #6 (risk_r selalu 1.0) dan BUG #7 (risk_per_trade_fast_percent, max_sektor_percent belum dipakai) -- masih butuh keputusan desain, belum disentuh
+- `docs/02_SUMMARY.md` dan `docs/04_FITUR.md` -- masih outdated, belum mencakup Watchlist Signal architecture, risk_engine.py, round_to_tick(), IHSG trend
+- Retensi Watchlist Signal (60 hari hardcoded) belum dikonsistenkan dengan pola `ihsg_signal_retention_days` yang sudah configurable
+
+### Checklist Prioritas Sesi Berikutnya
+1. Pastikan commit & push hari ini benar-benar sudah masuk ke GitHub (cek `git log`/`git status` di awal sesi berikutnya)
+2. Diskusi & putuskan desain BUG #6 (risk_r) dan BUG #7 (risk_per_trade_fast_percent, max_sektor_percent)
+3. Tulis ulang `docs/02_SUMMARY.md` dan `docs/04_FITUR.md`
+4. Konsistensikan retensi Watchlist Signal dengan pola settings configurable
+5. Minor items dari `03_BUGS.md` bagian "Bug Minor" (jeda antar-request yfinance, secondary sort consecutive losses, validasi struktur Excel) -- prioritas rendah, kerjakan kalau ada waktu luang
 
 ---
 
