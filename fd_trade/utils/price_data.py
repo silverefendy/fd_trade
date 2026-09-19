@@ -202,13 +202,23 @@ def get_support_resistance(ticker):
         # desimal panjang kalau kandidat terpilih berasal dari MA (rolling mean),
         # bukan dari swing high/low OHLC asli yang sudah bulat. Dibulatkan ke
         # fraksi harga resmi BEI supaya semua level konsisten & bisa dieksekusi.
+        # BUG #11 FIX (19 Sep 2026): support_level_2/_3 dan
+        # resistance_level_2/_3 adalah field Currency -- kolom MySQL-nya
+        # NOT NULL DEFAULT 0 (perilaku default Frappe untuk field numerik,
+        # walau "reqd" tidak di-set). Kalau kandidat S/R yang ditemukan
+        # kurang dari 3 (ticker dengan histori pendek/kurang volatil),
+        # round_to_tick(None) tetap None dan INSERT/UPDATE gagal dengan
+        # "Column cannot be null". Fix: default-kan ke 0 SETELAH
+        # round_to_tick, supaya 0 merepresentasikan "level tidak
+        # ditemukan" (pola sama seperti Take Profit kosong = 0 di
+        # Trade Journal untuk kasus tidak berlaku).
         return {
-            "support_level": round_to_tick(support_level),
-            "support_level_2": round_to_tick(support_level_2),
-            "support_level_3": round_to_tick(support_level_3),
-            "resistance_level": round_to_tick(resistance_level),
-            "resistance_level_2": round_to_tick(resistance_level_2),
-            "resistance_level_3": round_to_tick(resistance_level_3),
+            "support_level": round_to_tick(support_level) or 0,
+            "support_level_2": round_to_tick(support_level_2) or 0,
+            "support_level_3": round_to_tick(support_level_3) or 0,
+            "resistance_level": round_to_tick(resistance_level) or 0,
+            "resistance_level_2": round_to_tick(resistance_level_2) or 0,
+            "resistance_level_3": round_to_tick(resistance_level_3) or 0,
             "details": "\n".join(detail_lines),
             "trend": trend,
             "ma20": ma20,
