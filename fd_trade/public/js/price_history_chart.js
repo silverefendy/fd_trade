@@ -83,8 +83,20 @@
             const color = pattern.direction === "Bullish" ? "#2e7d32" : "#c62828";
             const tentative = pattern.confidence_level === "tentative";
             const line = chart.addLineSeries({color: color, lineWidth: tentative ? 1 : 2, lineStyle: 2, crosshairMarkerVisible: false});
-            line.setData((pattern.key_points || []).map(point => ({time: point.date, value: point.price})));
-            line.setMarkers((pattern.key_points || []).map(point => ({time: point.date, position: pattern.direction === "Bullish" ? "belowBar" : "aboveBar", color: color, shape: "circle", text: `${pattern.pattern_name}${tentative ? " (tentative)" : ""}`})));
+            // BUG FIX (19 Sep 2026): overlay ikut jalur harga (close) asli
+            // antara key_points pertama & terakhir, bukan garis lurus saja.
+            const kp = pattern.key_points || [];
+            if (kp.length >= 2) {
+                const startDate = kp[0].date;
+                const endDate = kp[kp.length - 1].date;
+                const pathData = history
+                    .filter(row => row.date >= startDate && row.date <= endDate)
+                    .map(row => ({time: row.date, value: row.close}));
+                line.setData(pathData.length ? pathData : kp.map(point => ({time: point.date, value: point.price})));
+            } else {
+                line.setData(kp.map(point => ({time: point.date, value: point.price})));
+            }
+            line.setMarkers(kp.map(point => ({time: point.date, position: pattern.direction === "Bullish" ? "belowBar" : "aboveBar", color: color, shape: "circle", text: `${pattern.pattern_name}${tentative ? " (tentative)" : ""}`})));
         });
         chart.timeScale().fitContent();
         setTimeout(() => {
