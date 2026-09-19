@@ -55,13 +55,23 @@ def _double_pattern(data, peaks, troughs, bullish):
         depth = abs(neckline - average_point) / max(abs(average_point), 1e-9)
         if depth < MIN_PATTERN_DEPTH_PCT:
             continue
+        # BUG FIX (19 Sep 2026): (1) breakout wajib margin 1.5% dari neckline;
+        # (2) confidence_level sebelumnya hardcode "confirmed" untuk semua
+        # kandidat, tidak ikut status -- akar penyebab "Forming...confirmed".
+        BREAKOUT_MARGIN_PCT = 0.015
         close = _safe_float(data[-1].get("close"))
-        confirmed = close is not None and ((close >= neckline if bullish else close <= neckline))
+        if close is not None and neckline:
+            confirmed = (close >= neckline * (1 + BREAKOUT_MARGIN_PCT) if bullish
+                         else close <= neckline * (1 - BREAKOUT_MARGIN_PCT))
+        else:
+            confirmed = False
+        status = "confirmed" if confirmed else "forming"
+        confidence_level = "confirmed" if confirmed else "tentative"
         key_points = [_point(data, left[0], left[1], left[2]), _point(data, between[0][0], neckline, "neckline"), _point(data, right[0], right[1], right[2])]
         candidates.append({
-            "pattern_name": name, "direction": direction, "confidence_level": "confirmed",
+            "pattern_name": name, "direction": direction, "confidence_level": confidence_level,
             "key_points": key_points, "neckline_price": float(neckline),
-            "status": "confirmed" if confirmed else "forming",
+            "status": status,
             "notes": f"Dua {'lembah' if bullish else 'puncak'} mirip terdeteksi; neckline {'sudah ditembus' if confirmed else 'belum dikonfirmasi'}.",
             "_amplitude": depth, "_latest_index": right[0],
         })
@@ -86,12 +96,23 @@ def _shoulder_pattern(data, peaks, troughs, bullish):
         depth = abs(neckline - head[1]) / max(abs(head[1]), 1e-9)
         if depth < MIN_PATTERN_DEPTH_PCT:
             continue
+        # BUG FIX (19 Sep 2026): fix sama seperti _double_pattern -- breakout
+        # wajib margin 1.5% dari neckline, dan confidence_level (sebelumnya
+        # hardcode "confirmed" untuk semua kandidat H&S/Inverse H&S) sekarang
+        # ikut status aktual.
+        BREAKOUT_MARGIN_PCT = 0.015
         close = _safe_float(data[-1].get("close"))
-        confirmed = close is not None and ((close >= neckline if bullish else close <= neckline))
+        if close is not None and neckline:
+            confirmed = (close >= neckline * (1 + BREAKOUT_MARGIN_PCT) if bullish
+                         else close <= neckline * (1 - BREAKOUT_MARGIN_PCT))
+        else:
+            confirmed = False
+        status = "confirmed" if confirmed else "forming"
+        confidence_level = "confirmed" if confirmed else "tentative"
         candidates.append({
-            "pattern_name": name, "direction": direction, "confidence_level": "confirmed",
+            "pattern_name": name, "direction": direction, "confidence_level": confidence_level,
             "key_points": [_point(data, left[0], left[1], left[2]), _point(data, head[0], head[1], head[2]), _point(data, right[0], right[1], right[2]), _point(data, between[0][0], neckline, "neckline"), _point(data, between[-1][0], neckline, "neckline")],
-            "neckline_price": float(neckline), "status": "confirmed" if confirmed else "forming",
+            "neckline_price": float(neckline), "status": status,
             "notes": f"Tiga {'lembah' if bullish else 'puncak'} berurutan dengan kepala yang {'lebih dalam' if bullish else 'lebih tinggi'}.",
             "_amplitude": depth, "_latest_index": right[0],
         })
