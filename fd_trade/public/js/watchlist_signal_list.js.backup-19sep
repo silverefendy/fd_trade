@@ -8,10 +8,6 @@ function fmtNum(value) {
 
 frappe.listview_settings["Watchlist Signal"] = {
     onload: function (listview) {
-        // BUG FIX (19 Sep 2026): banner Trend/S/R IHSG, sama seperti di
-        // Watchlist -- fungsi shared di ihsg_banner.js.
-        fd_trade_show_ihsg_banner(listview);
-
         listview.page.add_inner_button("Lihat Chart", () => {
             const selected = listview.get_checked_items();
             if (!selected.length) return frappe.msgprint("Pilih satu signal terlebih dahulu.");

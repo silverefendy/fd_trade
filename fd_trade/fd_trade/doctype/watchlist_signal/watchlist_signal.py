@@ -110,6 +110,7 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
             ihsg_trend=ihsg_trend,
             proximity=proximity,
             volume_status=volume.get("volume_status") if volume else None,
+            proximity_threshold_pct=proximity_threshold,
         )
 
         notes = rec.get("notes")

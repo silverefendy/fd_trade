@@ -189,4 +189,18 @@ def refresh_current_price(docname):
     doc.last_updated = now()
     doc.save()
 
+    from fd_trade.fd_trade.doctype.watchlist_signal.watchlist_signal import create_signal
+    create_signal(
+        watchlist_name=doc.name,
+        ticker=doc.ticker,
+        current_price=doc.current_price,
+        trend_status=doc.trend_status,
+        support_level=doc.support_level,
+        support_level_2=doc.support_level_2,
+        resistance_level=doc.resistance_level,
+        support_level_3=doc.support_level_3,
+        resistance_level_2=doc.resistance_level_2,
+        resistance_level_3=doc.resistance_level_3,
+    )
+
     return {"current_price": doc.current_price}

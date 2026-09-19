@@ -168,15 +168,22 @@ def parse_excel_value(value):
     # Remove commas
     value_str = value_str.replace(",", "")
 
+    # Format akuntansi negatif: (1.5M) -> -1.5M
+    is_negative = value_str.startswith("(") and value_str.endswith(")")
+    if is_negative:
+        value_str = value_str[1:-1]
+
     # Handle suffixes
     if value_str.endswith("B"):
-        return float(value_str[:-1]) * 1000000000
+        result = float(value_str[:-1]) * 1000000000
     elif value_str.endswith("M"):
-        return float(value_str[:-1]) * 1000000
+        result = float(value_str[:-1]) * 1000000
     elif value_str.endswith("K"):
-        return float(value_str[:-1]) * 1000
+        result = float(value_str[:-1]) * 1000
     else:
         try:
-            return float(value_str)
+            result = float(value_str)
         except ValueError:
             return None
+
+    return -result if is_negative else result

@@ -12,13 +12,7 @@ app_logo_url = "/assets/fd_trade/images/fd_trade-logo.svg"
 app_color = "grey"
 app_email = "silverefendy@users.noreply.github.com"
 app_license = "MIT"
-# BUG FIX (19 Sep 2026): ihsg_banner.js didaftarkan sebagai app_include_js
-# (global) supaya window.fd_trade_show_ihsg_banner() tersedia sebelum
-# doctype_list_js (watchlist_list.js, watchlist_signal_list.js) jalan.
-app_include_js = [
-    "/assets/fd_trade/js/price_history_chart.js",
-    "/assets/fd_trade/js/ihsg_banner.js",
-]
+app_include_js = ["/assets/fd_trade/js/price_history_chart.js"]
 
 add_to_apps_screen = [
     {

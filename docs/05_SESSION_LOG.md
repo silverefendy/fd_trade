@@ -4,27 +4,32 @@
 
 ---
 
-## Sesi: Jumat, 18 September 2026 (Bug Fix — Watchlist Signal Race Condition)
+## Sesi: Sabtu, 19 September 2026 (Review Codebase via Claude — Tanpa Perubahan Kode)
 
 ### Konteks
-Diagnosis lanjutan dari laporan user "Watchlist Signal masih bermasalah", disertai screenshot record `WS-260918-1426` (PTRO) dan output console yang menunjukkan error berulang: `create_signal failed for <TICKER>: Could not find Watchlist: <TICKER>` untuk ticker `LUCY`, `TINS`, `DSSA`, `ERAA`, `KIJA`, `ANTM`.
+Sesi ini adalah **review/orientasi ulang** terhadap kondisi repo terkini (dikirim sebagai kumpulan file source lengkap ke Claude), dibandingkan terhadap rangkuman sesi lama tertanggal 16 September 2026 malam yang sempat dipakai sebagai referensi. Tujuannya memastikan asisten (Claude) bekerja dari kondisi kode yang benar-benar terkini, bukan rangkuman yang sudah kedaluwarsa.
 
-### Temuan
-1. **Root cause dikonfirmasi**: race condition antara `before_save()` dan proses INSERT dokumen Watchlist baru di Frappe -- `create_signal()` dipanggil sebelum baris Watchlist benar-benar ada di DB, menyebabkan validasi Link field gagal fail-silent. Detail lengkap di `03_BUGS.md` BUG #9.
-2. Field kosong (`Current Volume: 0`, `Take Profit Next/Extended: IDR 0,00`) di screenshot `WS-260918-1426` (PTRO) **BUKAN bug baru** -- Take Profit kosong memang by design (hanya diisi untuk rekomendasi Sell), dan volume 0 kemungkinan kegagalan fetch yfinance sesaat (konsisten dengan catatan minor lama soal tidak ada retry/backoff yfinance).
+### Temuan Utama
+1. Rangkuman lama (16 Sep malam) menandai BUG #1, #2, #4 sebagai "belum dipatch" — ternyata **semuanya sudah di-resolve** per commit `76bf9fba` (audit 17 Sep 2026, tercatat di `03_BUGS.md`). Tidak ada tindakan baru diperlukan untuk ketiga bug ini.
+2. BUG #3 (newline literal) sudah diperbaiki untuk `daily_review_notification`, `weekly_review_notification`, `check_intraday_conditions`, dan `notify_on_close` (`trade_journal.py`). **Masih tersisa** di `generate_insight_notes()` (`broker_summary.py`) — belum disentuh.
+3. Fitur warna list view untuk `recommendation` di Watchlist Signal (Buy hijau/Sell merah/Avoid hitam/Wait abu-abu) — **masih belum dibuat**. Tidak ditemukan file `watchlist_signal_list.js` dengan formatter warna di kode yang direview.
+4. Sidebar "Watchlist Signal" & "Stock Group" yang tidak muncul di kotak DocTypes — status tidak berubah, masih belum terpecahkan, masih prioritas rendah sesuai keputusan sesi sebelumnya.
+5. BUG #5 (`setup_price_alert.sh` masih di root repo, risiko silent overwrite skema), BUG #6 (`risk_r` selalu 1.0), dan BUG #7 (`risk_per_trade_fast_percent`/`max_sektor_percent` belum dipakai) — semua masih terbuka, belum ada keputusan desain baru.
+6. BUG #8 (ditemukan sesi 17 Sep, dikonfirmasi masih terbuka): `sizing_limiting_factor` dihitung dengan benar di `calculate_recommendation()` tapi tidak pernah tersimpan ke `Watchlist Signal` — dua penyebab sekaligus: field belum ada di skema `watchlist_signal.json`, dan `create_signal()` tidak membaca key `sizing_limiting_factor` dari hasil `rec`.
+7. `docs/02_SUMMARY.md` dan `docs/04_FITUR.md` dikonfirmasi ulang masih outdated — belum mencakup arsitektur Watchlist Signal, `risk_engine.py`, `round_to_tick()`, atau IHSG trend yang sudah live di kode sejak beberapa sesi lalu.
 
-### Tindakan yang Diambil
-- Patch `watchlist.py`: pindahkan `create_signal()` dari `before_save()` ke `on_update()` via flag `self._pending_signal_refresh`.
-- Backup file lama sebelum patch (`watchlist.py.backup-<timestamp>`).
-- Verifikasi: `bench migrate` + `bench restart`, lalu test manual bikin Watchlist ticker fiktif (`ZZTES`, 5 karakter) -- hasil `Watchlist Signal count: 1` (sebelumnya `0`).
-- Update `03_BUGS.md` (BUG #9 baru) dan `05_SESSION_LOG.md` (entri ini).
+### Tindakan yang Diambil Sesi Ini
+- Tidak ada perubahan kode — sesi ini murni orientasi/audit ulang berbasis file yang dikirim langsung, tanpa akses server.
+- Update `docs/05_SESSION_LOG.md` (file ini).
 
-### Catatan
-- Test pertama sempat gagal karena ticker uji `TESTBUG` (7 karakter) melebihi batas panjang field `ticker` (Property Setter membatasi 5 karakter) -- `CharacterLengthExceededError` di `_validate()`, bukan terkait bug yang sedang diperbaiki. Diulang dengan ticker 5 karakter (`ZZTES`) dan berhasil.
-
-### Checklist Prioritas Sesi Berikutnya
-- Item lama dari sesi 17 Sep masih berlaku (lihat entri sesi di bawah): BUG #1, #3 (sisa), #4, #5, #6, #7 dari `03_BUGS.md`.
-- Pertimbangkan tambah retry/backoff sederhana untuk `get_volume_confirmation()`/pemanggilan yfinance lain, supaya field volume tidak sering kosong akibat kegagalan sesaat.
+### Checklist Prioritas Sesi Berikutnya (Belum Berubah dari Audit 17 Sep, Masih Valid)
+1. Patch BUG #8 (tambah field `sizing_limiting_factor` ke `watchlist_signal.json` + baca di `create_signal()`)
+2. Patch sisa BUG #3 (`generate_insight_notes` di `broker_summary.py`, ganti `\\n` jadi f-string dengan `\n` asli)
+3. Buat file `watchlist_signal_list.js` dengan formatter warna untuk field `recommendation` (Buy hijau `#2e7d32`, Sell merah `#c62828`, Avoid hitam/abu gelap, Wait abu-abu `#9e9e9e`), daftarkan di `hooks.py` -> `doctype_list_js` kalau perlu
+4. Hapus/arsipkan `setup_price_alert.sh` dari root repo (BUG #5)
+5. Diskusi keputusan desain BUG #6 (`risk_r`) dan BUG #7 (`risk_per_trade_fast_percent`, `max_sektor_percent`) — hapus field atau implementasikan fitur yang dimaksud
+6. Tulis ulang `docs/02_SUMMARY.md` dan `docs/04_FITUR.md` supaya mencakup Watchlist Signal, risk_engine, round_to_tick, IHSG trend
+7. Cek ulang sidebar Watchlist Signal/Stock Group kalau masih dianggap perlu
 
 ---
 

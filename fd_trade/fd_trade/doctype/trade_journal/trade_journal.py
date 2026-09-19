@@ -118,6 +118,10 @@ class TradeJournal(Document):
         if self.exit_price and self.position_lot:
             self.result_rp = (self.exit_price - self.entry_price) * self.position_lot * 100
 
+        # Auto-hitung result_r dari R-multiple, tetap bisa di-override manual.
+        if self.exit_price and risk_per_share:
+            self.result_r = (self.exit_price - self.entry_price) / risk_per_share
+
     def calculate_target_price(self, risk_per_share):
         """Hitung 3 skenario target profit (Conservative/Moderate/Aggressive)
         berdasarkan R-multiple, tampilkan sebagai suggestion, dan set
@@ -249,8 +253,10 @@ class TradeJournal(Document):
             )
 
     def on_update(self):
-        """Trigger Telegram notification when trade is closed."""
-        if self.status == "Closed" and self.exit_price and self.result_r is not None:
+        """Trigger Telegram notification hanya saat transisi ke Closed,
+        bukan di setiap save berikutnya selama status masih Closed."""
+        if (self.status == "Closed" and self.exit_price and self.result_r is not None
+                and self.has_value_changed("status")):
             notify_on_close(self)
 
 

@@ -346,7 +346,8 @@ def round_to_tick(price):
 def calculate_recommendation(ticker, current_price, trend, support_level, support_level_2,
                               resistance_level, support_level_3=None,
                               resistance_level_2=None, resistance_level_3=None,
-                              ihsg_trend=None, proximity=None, volume_status=None):
+                              ihsg_trend=None, proximity=None, volume_status=None,
+                              proximity_threshold_pct=None):
     """Rule-based recommendation (Fase 1) -- BUKAN prediksi harga, murni
     penerjemahan kondisi teknikal saat ini menjadi Buy/Wait/Sell/Avoid +
     entry zone + position sizing berbasis risk management yang sudah
@@ -360,6 +361,9 @@ def calculate_recommendation(ticker, current_price, trend, support_level, suppor
        sudah pegang, jangan entry baru jika belum)
     4. Selain itu -> Wait
     """
+    if proximity_threshold_pct is None:
+        proximity_threshold_pct = PROXIMITY_THRESHOLD_PCT
+
     if trend == "Bearish Kuat":
         result = {"recommendation": "Avoid"}
         if ihsg_trend == "Bearish Kuat":
@@ -368,7 +372,7 @@ def calculate_recommendation(ticker, current_price, trend, support_level, suppor
 
     if support_level and current_price is not None and current_price >= support_level:
         gap_pct = (current_price - support_level) / support_level
-        if gap_pct <= PROXIMITY_THRESHOLD_PCT / 100:
+        if gap_pct <= proximity_threshold_pct / 100:
             result = {
                 "recommendation": "Buy",
                 "recommendation_price_low": round_to_tick(support_level),
@@ -404,7 +408,7 @@ def calculate_recommendation(ticker, current_price, trend, support_level, suppor
     if (resistance_level and current_price is not None and current_price <= resistance_level
             and trend != "Bullish Kuat"):
         gap_pct = (resistance_level - current_price) / resistance_level
-        if gap_pct <= PROXIMITY_THRESHOLD_PCT / 100:
+        if gap_pct <= proximity_threshold_pct / 100:
             result = {
                 "recommendation": "Sell",
                 "recommendation_price_low": round_to_tick(resistance_level * 0.99),
