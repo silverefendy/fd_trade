@@ -4,6 +4,39 @@
 
 ---
 
+## Sesi: 20-21 September 2026 (S/R Volume Profile, data 3 tahun, backtest, tes)
+
+### Perubahan kode (commit 842b4f8 dan 15171b1)
+- `utils/volume_profile.py` (baru) + `get_support_resistance()` membaca tabel Price History (bukan yfinance live). Key hasil `price_history_rows` menggantikan `history`; `get_volume_confirmation(price_history_rows=...)`.
+- `_complete_sr_levels()`: S1-S3 dan R1-R3 selalu terisi dan strict di sisi harga setelah `round_to_tick` (uji sintetis 400 skenario: 45 punya level tidak valid sebelum patch, 0 sesudahnya). Urutan sumber: Volume Profile -> swing -> MA -> ATR14; sumber tiap level dicatat di `sr_details`.
+- Volume: `refresh_all_watchlist()` dan `fetch_support_resistance()` kini mengisi `volume_status` dan `avg_volume_20d` (sebelumnya hanya Watchlist baru / ganti ticker).
+- Price History: ingest melewati baris hari libur (volume 0, OHLC datar, tanggal tidak ada di ^JKSE); 94 baris artefak lama dihapus; backfill 3 tahun (+10.572 baris); retensi `cleanup_old_price_history` 365 -> 1100 hari.
+- `check_intraday_conditions()`: alert Telegram maksimal sekali per hari per jenis alert (dedupe via cache; sebelumnya hingga ~16 pesan/hari).
+- Stop loss rekomendasi (21 Sep): 1.5 x ATR14 dari harga sebagai primary; `support_level_2` hanya fallback bila ATR tidak bisa dihitung.
+
+### Backtest (22 ticker, beli limit di S1, RR 1.5, biaya round-trip 0.4%; expectancy kotor / bersih dalam R)
+| Metode | 1 tahun | 3 tahun |
+|---|---|---|
+| Volume Profile, stop S2 | -0.16 / -0.31 | +0.00 / -0.17 |
+| Volume Profile, stop ATR | -0.07 / -0.12 | +0.06 / -0.01 |
+| Swing lama, stop S2 | -0.05 / -0.14 | -0.06 / -0.19 |
+| Seragam (tanpa struktur, stop 4.7%) | -0.28 / -0.36 | -0.12 / -0.20 |
+
+- Stop lebar (ATR) konsisten memperbaiki hasil bersih; stop sempit mahal karena biaya jadi porsi besar dari 1R.
+- Pada stop yang sama, Volume Profile mengungguli baseline seragam sekitar +0.12R di kedua sampel (indikasi, bukan bukti kuat). Filter MA50 tidak membantu Volume Profile.
+- Setelah biaya konfigurasi terbaik hanya impas. Label Buy = "harga dekat zona support" (11 dari 22 ticker Buy saat refresh 20 Sep), bukan edge yang terbukti.
+
+### Tes
+- 43 tes unit lolos (2 skip live); integration 9 dari 10. Satu gagal lama: `test_create_signal_notifies_only_on_change` ("Can't pickle local object" pada test double, bukan bug produksi yang terbukti).
+- Tes pola diperbarui (`tentative` vs `confirmed`, empat tes baru), tes volume memakai list dict, tes review jobs terisolasi dari DB nyata (hanya query `tabTrade Journal` dimock), tes baru dedupe alert.
+
+### Masih terbuka
+- BUG #6 (`risk_r`), BUG #7 (`risk_per_trade_fast_percent`, `max_sektor_percent`), banner IHSG, overlay pola chart Watchlist, sidebar Watchlist Signal, Error Log PermissionError, retensi Watchlist Signal (60 hari hardcoded).
+- Klasifikasi trend (MA20 vs MA50) tertinggal pada penurunan tajam (label "Sideways" saat harga jauh di bawah semua MA); kandidat: pengecualian downtrend (harga < MA50 < MA200) untuk label Avoid, uji dulu di backtest.
+- Fase C (volume bar chart, Hourly; lihat `test_intraday.py` yang belum di-commit), Fase D (dashboard); `docs/02_SUMMARY.md` dan `docs/04_FITUR.md` perlu menambah `_complete_sr_levels`, ATR stop, dedupe alert.
+
+---
+
 ## Sesi: Sabtu, 19 September 2026 (Review + Patch Batch — Proximity Threshold, Notif Dobel, Result R Otomatis, Excel Negatif, Arsip Script Lama)
 
 ### Konteks
