@@ -40,11 +40,12 @@ class TestPriceData(unittest.TestCase):
             def __contains__(self, key): return key == "Volume"
             def __getitem__(self, key): return self.series
 
-        self.assertEqual(get_volume_confirmation("BBCA", History([100] * 20 + [200]))["volume_status"], "Volume Tinggi")
-        self.assertEqual(get_volume_confirmation("BBCA", History([100] * 20 + [25]))["volume_status"], "Volume Rendah")
-        self.assertEqual(get_volume_confirmation("BBCA", History([100] * 21))["volume_status"], "Volume Normal")
-        self.assertIsNone(get_volume_confirmation("BBCA", History([100] * 20)))
-        self.assertIsNone(get_volume_confirmation("BBCA", History([0] * 21)))
+        rows = lambda values: [{"volume": v} for v in values]  # baris Price History (dict)
+        self.assertEqual(get_volume_confirmation("BBCA", rows([100] * 20 + [200]))["volume_status"], "Volume Tinggi")
+        self.assertEqual(get_volume_confirmation("BBCA", rows([100] * 20 + [25]))["volume_status"], "Volume Rendah")
+        self.assertEqual(get_volume_confirmation("BBCA", rows([100] * 21))["volume_status"], "Volume Normal")
+        self.assertIsNone(get_volume_confirmation("BBCA", rows([100] * 20)))
+        self.assertIsNone(get_volume_confirmation("BBCA", rows([0] * 21)))
 
     def test_recommendation_branches_and_notes(self):
         cases = [

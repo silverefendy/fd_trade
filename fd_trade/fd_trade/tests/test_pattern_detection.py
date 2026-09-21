@@ -24,22 +24,43 @@ class TestPatternDetection(unittest.TestCase):
     def test_double_bottom(self):
         closes = [100] * 35
         closes[5], closes[14], closes[25], closes[-1] = 90, 110, 92, 100
-        self.assert_pattern(closes, "Double Bottom", "Bullish")
+        self.assert_pattern(closes, "Double Bottom", "Bullish", confidence="tentative")
 
     def test_double_top(self):
         closes = [100] * 35
         closes[5], closes[14], closes[25], closes[-1] = 110, 90, 108, 100
-        self.assert_pattern(closes, "Double Top", "Bearish")
+        self.assert_pattern(closes, "Double Top", "Bearish", confidence="tentative")
 
     def test_inverse_head_and_shoulders(self):
         closes = [100] * 35
         closes[5], closes[10], closes[16], closes[22], closes[27], closes[-1] = 90, 105, 75, 105, 91, 102
-        self.assert_pattern(closes, "Inverse Head and Shoulders", "Bullish")
+        self.assert_pattern(closes, "Inverse Head and Shoulders", "Bullish", confidence="tentative")
 
     def test_head_and_shoulders(self):
         closes = [100] * 35
         closes[5], closes[10], closes[16], closes[22], closes[27], closes[-1] = 110, 95, 125, 95, 109, 98
-        self.assert_pattern(closes, "Head and Shoulders", "Bearish")
+        self.assert_pattern(closes, "Head and Shoulders", "Bearish", confidence="tentative")
+
+    # --- CONFIRMED: close terakhir sudah menembus neckline (perbaikan 19 Sep 2026) ---
+    def test_double_bottom_confirmed_after_neckline_break(self):
+        closes = [100] * 35
+        closes[5], closes[14], closes[25], closes[-1] = 90, 110, 92, 113
+        self.assert_pattern(closes, "Double Bottom", "Bullish", confidence="confirmed")
+
+    def test_double_top_confirmed_after_neckline_break(self):
+        closes = [100] * 35
+        closes[5], closes[14], closes[25], closes[-1] = 110, 90, 108, 87
+        self.assert_pattern(closes, "Double Top", "Bearish", confidence="confirmed")
+
+    def test_inverse_head_and_shoulders_confirmed_after_neckline_break(self):
+        closes = [100] * 35
+        closes[5], closes[10], closes[16], closes[22], closes[27], closes[-1] = 90, 105, 75, 105, 91, 109
+        self.assert_pattern(closes, "Inverse Head and Shoulders", "Bullish", confidence="confirmed")
+
+    def test_head_and_shoulders_confirmed_after_neckline_break(self):
+        closes = [100] * 35
+        closes[5], closes[10], closes[16], closes[22], closes[27], closes[-1] = 110, 95, 125, 95, 109, 91
+        self.assert_pattern(closes, "Head and Shoulders", "Bearish", confidence="confirmed")
 
     def test_cup_and_handle_is_at_most_tentative(self):
         closes = [100, 98, 95, 91, 87, 84, 81, 79, 78, 78, 79, 81, 84, 88, 92, 96, 99, 100, 99, 98, 97, 98, 99, 99, 100, 100, 100, 100, 100, 100]
