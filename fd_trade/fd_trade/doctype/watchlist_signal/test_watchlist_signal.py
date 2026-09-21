@@ -77,6 +77,7 @@ class IntegrationTestWatchlistSignal(IntegrationTestCase):
 			previous_queries["count"] += 1
 			return [] if previous_queries["count"] == 1 else [frappe._dict({"recommendation": "Buy"})]
 		with patch.object(frappe, "get_single", return_value=settings), \
+			patch.object(frappe.utils, "now", return_value="2026-01-01 00:00:00"), \
 			patch.object(frappe, "get_all", side_effect=get_all_for_signal) as get_all, \
 			patch.object(frappe, "get_doc", return_value=signal_doc), \
 			patch.object(frappe.db, "commit"), \
