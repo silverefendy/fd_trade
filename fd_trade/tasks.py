@@ -8,6 +8,27 @@ from frappe.utils import today, getdate, add_to_date, flt
 from fd_trade.utils.telegram import send_telegram_notification
 
 
+# ALERT-DEDUPE FIX (20 Sep 2026)
+def _cache():
+    cache = frappe.cache
+    return cache() if callable(cache) else cache
+
+
+def _send_alert_once_per_day(key, message):
+    """Kirim alert Telegram maksimal sekali per hari per jenis alert (hindari spam tiap
+    30 menit). Bila cache bermasalah tetap kirim: lebih baik dobel daripada terlewat."""
+    cache_key = f"fd_trade_alert:{key}:{frappe.utils.today()}"
+    try:
+        cache = _cache()
+        if cache.get_value(cache_key):
+            return False
+        cache.set_value(cache_key, 1, expires_in_sec=86400)
+    except Exception:
+        pass
+    send_telegram_notification(message)
+    return True
+
+
 def check_intraday_conditions():
     """Check intraday conditions and send warnings if limits are breached.
 
@@ -36,7 +57,7 @@ def check_intraday_conditions():
                 f"Weekly loss limit breached. Current P&L: {weekly_pnl}. "
                 f"Recommend 50% size reduction."
             )
-            send_telegram_notification(message)
+            _send_alert_once_per_day("weekly_loss", message)
 
         # Check total open exposure
         exposure_result = frappe.db.sql(
@@ -56,7 +77,7 @@ def check_intraday_conditions():
                 f"Total portfolio exposure exceeded. Current: {current_exposure}, "
                 f"Limit: {max_exposure}"
             )
-            send_telegram_notification(message)
+            _send_alert_once_per_day("total_exposure", message)
 
     except Exception as e:
         frappe.log_error(f"check_intraday_conditions failed: {e}", "FD-Trade Scheduled Tasks")
@@ -315,7 +336,22 @@ def refresh_all_watchlist():
                     values["trend_status"] = sr_result.get("trend")
                     # BUG #10 FIX: simpan history sementara (dibuang sebelum
                     # frappe.db.set_value karena bukan field DocType asli).
-                    values["_sr_history"] = sr_result.get("history")
+                    values["_sr_history"] = sr_result.get("price_history_rows")
+
+                    # VOLUME FIX (20 Sep 2026): isi volume_status & avg_volume_20d.
+                    # Sebelumnya hanya terisi utk Watchlist BARU / ganti ticker
+                    # (before_save), jadi record lama selalu kosong. Reuse history.
+                    try:
+                        from fd_trade.utils.price_data import get_volume_confirmation
+                        vol_result = get_volume_confirmation(
+                            row.ticker, price_history_rows=sr_result.get("price_history_rows")
+                        )
+                        if vol_result:
+                            values["volume_status"] = vol_result.get("volume_status")
+                            if frappe.get_meta("Watchlist").has_field("avg_volume_20d"):
+                                values["avg_volume_20d"] = vol_result.get("avg_volume_20d") or 0
+                    except Exception:
+                        frappe.log_error(message=frappe.get_traceback(), title="FD-Trade Scheduled Tasks")
 
                 if values:
                     values["last_updated"] = frappe.utils.now()
@@ -559,6 +595,19 @@ def _store_price_history_for_ticker(ticker, period="1y"):
     inserted = 0
     for row in rows:
         try:
+            # HOLIDAY-ROW FIX (20 Sep 2026): yfinance kadang mengirim baris hari libur
+            # bursa (volume 0, OHLC datar). Lewati bila tanggalnya bukan hari bursa
+            # (tidak ada di IHSG). Self-healing: refresh harian berikutnya (period 5d)
+            # akan menyimpannya bila ternyata hari bursa sungguhan.
+            if (
+                not row.get("volume")
+                and not ticker.startswith("^")
+                and row["open"] == row["high"] == row["low"] == row["close"]
+                and not frappe.db.exists(
+                    "Price History", {"ticker": "^JKSE", "date": row["date"], "timeframe": "Daily"}
+                )
+            ):
+                continue
             filters = {"ticker": ticker, "date": row["date"], "timeframe": "Daily"}
             if frappe.db.exists("Price History", filters):
                 continue
@@ -615,9 +664,10 @@ def refresh_price_history_daily():
 
 
 def cleanup_old_price_history():
-    """Hapus Price History yang lebih tua dari 365 hari."""
+    """Hapus Price History yang lebih tua dari retention_days (1100 hari ~ 3 tahun)."""
     try:
-        cutoff = frappe.utils.add_days(frappe.utils.today(), -365)
+        retention_days = 1100  # naik dari 365 (20 Sep 2026) agar backtest punya >1 rezim pasar
+        cutoff = frappe.utils.add_days(frappe.utils.today(), -retention_days)
         old_rows = frappe.get_all(
             "Price History",
             filters={"date": ["<", cutoff]},

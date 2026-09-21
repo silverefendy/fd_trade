@@ -100,82 +100,46 @@ def get_daily_ohlc_history(ticker, period="1y"):
         return None
 
 def get_support_resistance(ticker):
-    """Hitung 3 level support & 3 level resistance terdekat, kombinasi
-    Swing High/Low + Moving Average.
+    """Hitung 3 level support & resistance dari Volume Profile (POC + HVN),
+    plus trend classification dari MA20/50/200 -- semua dari data Price
+    History yang sudah tersimpan (bukan fetch live yfinance lagi, per
+    keputusan 20 Sep 2026: satu sumber kebenaran OHLCV, Opsi A).
 
-    Menggunakan histori 6 bulan harian. Swing point dideteksi dengan window
-    5 hari kiri-kanan (titik balik lokal). MA yang dipakai: MA20, MA50, MA200.
-
-    Returns:
-        dict dengan keys level S/R 1-3 dan details (str), atau None jika data
-        tidak cukup. Key level lama adalah alias langsung S1/R1.
+    Kalau data Price History belum cukup (ticker baru ditambahkan,
+    backfill belum jalan), fallback ke backfill on-the-spot sekali,
+    lalu coba lagi.
     """
-    try:
-        full_ticker = ticker if ticker.startswith("^") else f"{ticker}.JK"
-        stock = yf.Ticker(full_ticker)
-        hist = stock.history(period="6mo")
+    from fd_trade.utils.volume_profile import get_price_history_rows, calculate_volume_profile
 
-        if hist.empty or len(hist) < 30:
-            frappe.log_error(f"Data histori tidak cukup untuk {full_ticker}", "FD-Trade Price Data")
+    try:
+        rows = get_price_history_rows(ticker, lookback_days=250)
+
+        if len(rows) < 30:
+            _backfill_cold_start(ticker)
+            rows = get_price_history_rows(ticker, lookback_days=250)
+
+        if len(rows) < 30:
+            frappe.log_error(f"Data Price History tidak cukup utk {ticker} (bahkan setelah backfill)", "FD-Trade Price Data")
             return None
 
-        current_price = float(hist["Close"].iloc[-1])
+        closes = [r["close"] for r in rows if r.get("close")]
+        current_price = closes[-1]
 
-        ma20 = float(hist["Close"].rolling(20).mean().iloc[-1]) if len(hist) >= 20 else None
-        ma50 = float(hist["Close"].rolling(50).mean().iloc[-1]) if len(hist) >= 50 else None
-        ma200 = float(hist["Close"].rolling(200).mean().iloc[-1]) if len(hist) >= 200 else None
+        def sma(values, period):
+            if len(values) < period:
+                return None
+            return sum(values[-period:]) / period
 
-        window = 5
-        highs = hist["High"].values
-        lows = hist["Low"].values
-        swing_highs, swing_lows = [], []
+        ma20 = sma(closes, 20)
+        ma50 = sma(closes, 50)
+        ma200 = sma(closes, 200)
 
-        for i in range(window, len(highs) - window):
-            seg_h = highs[i - window:i + window + 1]
-            if highs[i] == max(seg_h):
-                swing_highs.append(float(highs[i]))
-            seg_l = lows[i - window:i + window + 1]
-            if lows[i] == min(seg_l):
-                swing_lows.append(float(lows[i]))
+        vp = calculate_volume_profile(ticker, current_price=current_price, rows=rows)
+        if not vp:
+            return None
 
-        ma_values = [v for v in [ma20, ma50, ma200] if v is not None]
-
-        # Gabungkan semua kandidat, hilangkan duplikat yang terlalu berdekatan (<0.5% beda)
-        def dedupe(values):
-            values = sorted(set(values))
-            result = []
-            for v in values:
-                if not result or abs(v - result[-1]) / result[-1] > 0.005:
-                    result.append(v)
-            return result
-
-        support_candidates = dedupe([v for v in (swing_lows + ma_values) if v < current_price])
-        resistance_candidates = dedupe([v for v in (swing_highs + ma_values) if v > current_price])
-
-        # Support: urut dari yang PALING DEKAT (tertinggi) ke yang lebih jauh
-        support_candidates = sorted(support_candidates, reverse=True)
-        # Resistance: urut dari yang PALING DEKAT (terendah) ke yang lebih jauh
-        resistance_candidates = sorted(resistance_candidates)
-
-        support_levels = support_candidates[:3]
-        resistance_levels = resistance_candidates[:3]
-
-        support_level = support_levels[0] if len(support_levels) > 0 else None
-        support_level_2 = support_levels[1] if len(support_levels) > 1 else None
-        support_level_3 = support_levels[2] if len(support_levels) > 2 else None
-        resistance_level = resistance_levels[0] if len(resistance_levels) > 0 else None
-        resistance_level_2 = resistance_levels[1] if len(resistance_levels) > 1 else None
-        resistance_level_3 = resistance_levels[2] if len(resistance_levels) > 2 else None
-
-        detail_lines = [f"Current Price: Rp{current_price:,.0f}"]
-        if swing_lows:
-            nearest_swing_low = max([v for v in swing_lows if v < current_price], default=None)
-            if nearest_swing_low:
-                detail_lines.append(f"Swing Support: Rp{nearest_swing_low:,.0f}")
-        if swing_highs:
-            nearest_swing_high = min([v for v in swing_highs if v > current_price], default=None)
-            if nearest_swing_high:
-                detail_lines.append(f"Swing Resistance: Rp{nearest_swing_high:,.0f}")
+        detail_lines = [f"Current Price: Rp{current_price:,.0f}", f"POC (Point of Control): Rp{vp['poc']:,.0f}"]
+        detail_lines.append(f"Value Area: Rp{vp['value_area_low']:,.0f} - Rp{vp['value_area_high']:,.0f}")
         if ma20:
             detail_lines.append(f"MA20: Rp{ma20:,.0f}")
         if ma50:
@@ -183,14 +147,10 @@ def get_support_resistance(ticker):
         if ma200:
             detail_lines.append(f"MA200: Rp{ma200:,.0f}")
 
-        # Trend classification (5 kategori) berdasarkan selisih MA20 vs MA50,
-        # dikonfirmasi posisi current_price terhadap MA20. Ini deskripsi
-        # kondisi teknikal SAAT INI, bukan prediksi harga masa depan.
         trend = None
         if ma20 and ma50:
             ma_gap_pct = (ma20 - ma50) / ma50 * 100
             price_above_ma20 = current_price > ma20
-
             if ma_gap_pct > 2:
                 trend = "Bullish Kuat" if price_above_ma20 else "Bullish Lemah"
             elif ma_gap_pct < -2:
@@ -198,44 +158,117 @@ def get_support_resistance(ticker):
             else:
                 trend = "Sideways"
 
-        # BUG FIX (17 Sep 2026): support/resistance sebelumnya bisa berisi
-        # desimal panjang kalau kandidat terpilih berasal dari MA (rolling mean),
-        # bukan dari swing high/low OHLC asli yang sudah bulat. Dibulatkan ke
-        # fraksi harga resmi BEI supaya semua level konsisten & bisa dieksekusi.
-        # BUG #11 FIX (19 Sep 2026): support_level_2/_3 dan
-        # resistance_level_2/_3 adalah field Currency -- kolom MySQL-nya
-        # NOT NULL DEFAULT 0 (perilaku default Frappe untuk field numerik,
-        # walau "reqd" tidak di-set). Kalau kandidat S/R yang ditemukan
-        # kurang dari 3 (ticker dengan histori pendek/kurang volatil),
-        # round_to_tick(None) tetap None dan INSERT/UPDATE gagal dengan
-        # "Column cannot be null". Fix: default-kan ke 0 SETELAH
-        # round_to_tick, supaya 0 merepresentasikan "level tidak
-        # ditemukan" (pola sama seperti Take Profit kosong = 0 di
-        # Trade Journal untuk kasus tidak berlaku).
+        levels = _complete_sr_levels(vp, rows, current_price, [ma20, ma50, ma200])
+        detail_lines.append(levels["note"])
+
         return {
-            "support_level": round_to_tick(support_level) or 0,
-            "support_level_2": round_to_tick(support_level_2) or 0,
-            "support_level_3": round_to_tick(support_level_3) or 0,
-            "resistance_level": round_to_tick(resistance_level) or 0,
-            "resistance_level_2": round_to_tick(resistance_level_2) or 0,
-            "resistance_level_3": round_to_tick(resistance_level_3) or 0,
+            "support_level": levels["S"][0],
+            "support_level_2": levels["S"][1],
+            "support_level_3": levels["S"][2],
+            "resistance_level": levels["R"][0],
+            "resistance_level_2": levels["R"][1],
+            "resistance_level_3": levels["R"][2],
+            "poc": vp["poc"],
+            "value_area_high": vp["value_area_high"],
+            "value_area_low": vp["value_area_low"],
             "details": "\n".join(detail_lines),
             "trend": trend,
             "ma20": ma20,
             "ma50": ma50,
-            # BUG #10 FIX (19 Sep 2026): sertakan raw history 6 bulan yang
-            # sudah di-fetch di sini, supaya get_volume_confirmation() bisa
-            # REUSE data ini alih-alih fetch ulang ke Yahoo Finance untuk
-            # ticker yang sama. Sebelumnya tiap ticker melakukan 2x fetch
-            # 6-bulan identik (di sini + di get_volume_confirmation), yang
-            # menggandakan beban request dan memicu kegagalan diam-diam saat
-            # diproses berantai untuk banyak ticker (lihat 03_BUGS.md #10).
-            "history": hist,
+            "price_history_rows": rows,
         }
 
     except Exception as e:
         frappe.log_error(f"get_support_resistance failed for {ticker}: {e}", "FD-Trade Price Data")
         return None
+
+
+# LEVEL-COMPLETE FIX (20 Sep 2026)
+def _complete_sr_levels(vp, rows, current_price, mas):
+    """Pastikan S1-S3 (menurun) & R1-R3 (menaik) SELALU terisi dan strict di sisi yang
+    benar SETELAH pembulatan tick (dulu level bisa sama dengan harga). Volume Profile tetap
+    jadi sumber utama; kekurangan diisi berurutan: Swing high/low -> MA -> proyeksi ATR14.
+    Return {"S": [..3], "R": [..3], "note": "sumber tiap level"}; 0 = benar2 tidak ada."""
+    price = float(current_price)
+    highs = [float(r["high"]) for r in rows if r.get("high")]
+    lows = [float(r["low"]) for r in rows if r.get("low")]
+
+    w = 5
+    hs, ls = highs[-125:], lows[-125:]
+    swing_hi = [hs[i] for i in range(w, len(hs) - w) if hs[i] == max(hs[i - w:i + w + 1])]
+    swing_lo = [ls[i] for i in range(w, len(ls) - w) if ls[i] == min(ls[i - w:i + w + 1])]
+
+    trs = []
+    for i in range(1, len(rows)):
+        try:
+            h, l, pc = float(rows[i]["high"]), float(rows[i]["low"]), float(rows[i - 1]["close"])
+        except (TypeError, KeyError, ValueError):
+            continue
+        trs.append(max(h - l, abs(h - pc), abs(l - pc)))
+    atr = (sum(trs[-14:]) / len(trs[-14:])) if trs else 0
+    if atr <= 0:
+        atr = price * 0.03
+
+    def build(side, primary, pools):
+        out = []
+
+        def ok(c):
+            if not c or c <= 0:
+                return False
+            if side == "S":
+                return c < price and (not out or c < out[-1][0] * 0.99)
+            return c > price and (not out or c > out[-1][0] * 1.01)
+
+        for lvl in primary:
+            c = round_to_tick(lvl) if lvl else None
+            if ok(c):
+                out.append((c, "VP"))
+        for name, cands in pools:
+            for lvl in sorted(cands, reverse=(side == "S")):
+                if len(out) == 3:
+                    break
+                c = round_to_tick(lvl)
+                if ok(c):
+                    out.append((c, name))
+            if len(out) == 3:
+                break
+        step = 1.5
+        while len(out) < 3 and step <= 20:
+            ref = out[-1][0] if out else price
+            c = round_to_tick(ref - atr * step if side == "S" else ref + atr * step)
+            if side == "S" and (not c or c <= 0):
+                break
+            if ok(c):
+                out.append((c, "ATR"))
+            else:
+                step += 0.5
+        return out
+
+    ma_vals = [m for m in mas if m]
+    S = build("S", [vp.get(k) for k in ("support_level", "support_level_2", "support_level_3")],
+              [("Swing", swing_lo), ("MA", ma_vals)])
+    R = build("R", [vp.get(k) for k in ("resistance_level", "resistance_level_2", "resistance_level_3")],
+              [("Swing", swing_hi), ("MA", ma_vals)])
+
+    def lv(lst):
+        return [x[0] for x in lst] + [0] * (3 - len(lst))
+
+    def sr(lst):
+        return [x[1] for x in lst] + ["-"] * (3 - len(lst))
+
+    note = ("Sumber level: " + ", ".join(f"S{i + 1}={s}" for i, s in enumerate(sr(S)))
+            + " | " + ", ".join(f"R{i + 1}={s}" for i, s in enumerate(sr(R))))
+    return {"S": lv(S), "R": lv(R), "note": note}
+
+
+def _backfill_cold_start(ticker):
+    """Backfill Price History sekali untuk ticker yang datanya belum ada
+    sama sekali, dipanggil dari get_support_resistance() saat cold-start."""
+    from fd_trade.tasks import _store_price_history_for_ticker
+    try:
+        _store_price_history_for_ticker(ticker, period="1y")
+    except Exception as e:
+        frappe.log_error(f"Cold-start backfill gagal utk {ticker}: {e}", "FD-Trade Price History")
 
 
 def get_nearest_level(current_price, levels_dict, threshold_pct=PROXIMITY_THRESHOLD_PCT):
@@ -278,46 +311,33 @@ def get_nearest_level(current_price, levels_dict, threshold_pct=PROXIMITY_THRESH
     }
 
 
-def get_volume_confirmation(ticker, history=None, high_ratio=VOLUME_HIGH_RATIO,
+def get_volume_confirmation(ticker, price_history_rows=None, high_ratio=VOLUME_HIGH_RATIO,
                             low_ratio=VOLUME_LOW_RATIO):
-    """Validasi volume terakhir terhadap rata-rata volume 20 hari.
+    """Validasi volume terakhir terhadap rata-rata volume 20 hari, dari
+    Price History (bukan yfinance live lagi, per keputusan 20 Sep 2026).
 
-    ``history`` dapat diisi dengan histori yang sudah di-fetch caller agar
-    tidak terjadi hit yfinance kedua untuk ticker yang sama.
+    ``price_history_rows`` opsional -- reuse dari get_support_resistance()
+    supaya tidak query Price History dua kali untuk ticker yang sama.
     """
     try:
-        if history is None:
-            full_ticker = ticker if ticker.startswith("^") else f"{ticker}.JK"
-            history = yf.Ticker(full_ticker).history(period="6mo")
+        if price_history_rows is None:
+            from fd_trade.utils.volume_profile import get_price_history_rows
+            price_history_rows = get_price_history_rows(ticker, lookback_days=30)
 
-        if history is None or "Volume" not in history or history.empty:
-            return None
-
-        volumes = history["Volume"].dropna()
+        volumes = [r["volume"] for r in price_history_rows if r.get("volume") is not None]
         if len(volumes) < VOLUME_AVERAGE_DAYS + 1:
             return None
 
-        current_volume = float(volumes.iloc[-1])
-        baseline_values = volumes.iloc[-(VOLUME_AVERAGE_DAYS + 1):-1]
-        if baseline_values.empty:
-            return None
-        avg_volume = float(baseline_values.mean())
+        current_volume = float(volumes[-1])
+        baseline_values = volumes[-(VOLUME_AVERAGE_DAYS + 1):-1]
+        avg_volume = sum(baseline_values) / len(baseline_values)
         if avg_volume <= 0 or current_volume < 0:
             return None
 
         ratio = current_volume / avg_volume
-        if ratio > high_ratio:
-            status = "Volume Tinggi"
-        elif ratio < low_ratio:
-            status = "Volume Rendah"
-        else:
-            status = "Volume Normal"
+        status = "Volume Tinggi" if ratio > high_ratio else "Volume Rendah" if ratio < low_ratio else "Volume Normal"
 
-        return {
-            "current_volume": current_volume,
-            "avg_volume_20d": avg_volume,
-            "volume_status": status,
-        }
+        return {"current_volume": current_volume, "avg_volume_20d": avg_volume, "volume_status": status}
     except Exception as e:
         frappe.log_error(f"get_volume_confirmation failed for {ticker}: {e}", "FD-Trade Volume")
         return None
@@ -343,11 +363,39 @@ def round_to_tick(price):
     return round(price / tick) * tick
 
 
+def calculate_atr(rows, period=14):
+    """Average True Range dari baris Price History (rows harus urut
+    kronologis naik, field wajib: high, low, close). Formula sama persis
+    dgn yang sudah dipakai internal di _complete_sr_levels() utk proyeksi
+    level S/R fallback -- di-standalone-kan di sini (21 Sep 2026) supaya
+    bisa dipakai jg sbg basis stop loss ATR (lihat calculate_recommendation).
+    Return None (bukan estimasi price*0.03) kalau data tak cukup -- di
+    titik pemakaian, None berarti "pakai fallback lain", bukan "pakai
+    angka kira-kira"."""
+    if not rows or len(rows) < 2:
+        return None
+    trs = []
+    for i in range(1, len(rows)):
+        try:
+            h, l, pc = float(rows[i]["high"]), float(rows[i]["low"]), float(rows[i - 1]["close"])
+        except (TypeError, KeyError, ValueError):
+            continue
+        trs.append(max(h - l, abs(h - pc), abs(l - pc)))
+    # FIX (21 Sep 2026): wajib >= `period` sampel True Range supaya rata2
+    # benar2 mewakili `period` hari, bukan rata2 dari segelintir sampel yg
+    # tak reliabel (kasus nyata: saham baru listing/data historis pendek).
+    # Ini titik yg membuat fallback ke support_level_2 di
+    # calculate_recommendation() benar2 aktif saat dibutuhkan.
+    if len(trs) < period:
+        return None
+    return sum(trs[-period:]) / len(trs[-period:])
+
+
 def calculate_recommendation(ticker, current_price, trend, support_level, support_level_2,
                               resistance_level, support_level_3=None,
                               resistance_level_2=None, resistance_level_3=None,
                               ihsg_trend=None, proximity=None, volume_status=None,
-                              proximity_threshold_pct=None):
+                              proximity_threshold_pct=None, price_history_rows=None):
     """Rule-based recommendation (Fase 1) -- BUKAN prediksi harga, murni
     penerjemahan kondisi teknikal saat ini menjadi Buy/Wait/Sell/Avoid +
     entry zone + position sizing berbasis risk management yang sudah
@@ -380,10 +428,26 @@ def calculate_recommendation(ticker, current_price, trend, support_level, suppor
             }
             if support_level_3:
                 result["support_reference_extended"] = round_to_tick(support_level_3)
-            if support_level_2:
-                risk_per_share = current_price - support_level_2
+            # STOP LOSS (21 Sep 2026): ATR sbg PRIMARY, support_level_2 fallback
+            # murni teknis (dipakai HANYA kalau ATR tak bisa dihitung, misal
+            # ticker baru listing/data historis <14 hari). Keputusan berdasar
+            # riset backtest 750 hari x 22 ticker x 3 rezim IHSG: ATR-stop
+            # (x1.5) mengalahkan S2-stop di SEMUA rezim, margin di atas
+            # ambang 0.15R. Ini BUKAN hybrid "ambil yg lebih ketat" -- itu
+            # sengaja ditolak krn ATR selalu lebih lebar dari S2 shg S2 akan
+            # menang mayoritas kasus kalau dihibridkan.
+            ATR_STOP_MULTIPLIER = 1.5
+            atr14 = calculate_atr(price_history_rows) if price_history_rows else None
+            stop_loss_price = None
+            if atr14 and atr14 > 0:
+                stop_loss_price = current_price - (atr14 * ATR_STOP_MULTIPLIER)
+            if not stop_loss_price or stop_loss_price <= 0:
+                stop_loss_price = support_level_2  # fallback teknis, bukan pengganti hasil riset
+
+            if stop_loss_price:
+                risk_per_share = current_price - stop_loss_price
                 if risk_per_share > 0:
-                    result["stop_loss"] = round_to_tick(support_level_2)
+                    result["stop_loss"] = round_to_tick(stop_loss_price)
                     from fd_trade.utils.risk_engine import calculate_position_sizing
                     sizing = calculate_position_sizing(ticker, current_price, risk_per_share)
                     if sizing:

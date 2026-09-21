@@ -56,3 +56,4 @@ Thumbs.db
 *.backup[0-9]
 *.bak-*
 *.backup_*
+*.backup-*

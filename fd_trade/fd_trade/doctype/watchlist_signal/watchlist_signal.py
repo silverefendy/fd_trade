@@ -80,7 +80,7 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
         # fetch ulang 6-bulan data yang sama ke Yahoo Finance.
         volume = get_volume_confirmation(
             ticker,
-            history=history,
+            price_history_rows=history,
             high_ratio=volume_high_ratio,
             low_ratio=volume_low_ratio,
         )
@@ -111,6 +111,7 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
             proximity=proximity,
             volume_status=volume.get("volume_status") if volume else None,
             proximity_threshold_pct=proximity_threshold,
+            price_history_rows=history,  # ATR-stop (21 Sep 2026)
         )
 
         notes = rec.get("notes")

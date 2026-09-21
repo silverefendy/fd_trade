@@ -62,7 +62,7 @@ class Watchlist(Document):
             self.trend_status = sr_result.get("trend")
             # BUG #10 FIX (19 Sep 2026): simpan history mentah untuk dipakai
             # ulang oleh create_signal() di on_update(), hindari fetch dobel.
-            self._pending_sr_history = sr_result.get("history")
+            self._pending_sr_history = sr_result.get("price_history_rows")
 
             # BUG FIX (19 Sep 2026): volume_status tidak pernah diisi untuk
             # Watchlist -- sebelumnya get_volume_confirmation() hanya
@@ -71,7 +71,7 @@ class Watchlist(Document):
             # Import lokal (bukan ubah baris import atas yang dipakai 3
             # fungsi berbeda di file ini, utk hindari ambiguitas match).
             from fd_trade.utils.price_data import get_volume_confirmation
-            vol_result = get_volume_confirmation(self.ticker, history=sr_result.get("history"))
+            vol_result = get_volume_confirmation(self.ticker, price_history_rows=sr_result.get("price_history_rows"))
             if vol_result:
                 self.avg_volume_20d = vol_result.get("avg_volume_20d") or 0
                 self.volume_status = vol_result.get("volume_status")
@@ -142,6 +142,14 @@ def fetch_support_resistance(docname):
     doc.resistance_level_3 = result["resistance_level_3"]
     doc.sr_details = result["details"]
     doc.trend_status = result.get("trend")
+
+    # VOLUME FIX (20 Sep 2026): isi volume_status & avg_volume_20d juga saat
+    # refresh manual (sebelumnya kosong utk record lama).
+    from fd_trade.utils.price_data import get_volume_confirmation
+    vol_result = get_volume_confirmation(doc.ticker, price_history_rows=result.get("price_history_rows"))
+    if vol_result:
+        doc.avg_volume_20d = vol_result.get("avg_volume_20d") or 0
+        doc.volume_status = vol_result.get("volume_status")
     doc.save()
 
     from fd_trade.fd_trade.doctype.watchlist_signal.watchlist_signal import create_signal
@@ -156,7 +164,7 @@ def fetch_support_resistance(docname):
         support_level_3=doc.support_level_3,
         resistance_level_2=doc.resistance_level_2,
         resistance_level_3=doc.resistance_level_3,
-        history=result.get("history"),
+        history=result.get("price_history_rows"),
     )
 
     return result
