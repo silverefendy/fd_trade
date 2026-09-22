@@ -53,7 +53,8 @@ fixtures = [
 doctype_list_js = {
     "Watchlist": "public/js/watchlist_list.js",
     "Watchlist Signal": "public/js/watchlist_signal_list.js",
-    "IHSG Signal": "public/js/ihsg_signal_list.js"
+    "IHSG Signal": "public/js/ihsg_signal_list.js",
+    "Trade Journal": "public/js/trade_journal_list.js"
 }
 
 # Includes in JS

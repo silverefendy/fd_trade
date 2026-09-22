@@ -60,7 +60,7 @@ def get_open_exposure(ticker=None, exclude_docname=None):
     return per_stock_value, total_value
 
 
-def calculate_position_sizing(ticker, current_price, risk_per_share, settings=None, exclude_docname=None):
+def calculate_position_sizing(ticker, current_price, risk_per_share, settings=None, exclude_docname=None, trading_mode="Normal"):
     """Hitung saran lot & alokasi dana, mempertimbangkan SEMUA batasan
     yang dikonfigurasi di Trading Account Settings sekaligus -- bukan
     cuma risk_per_trade_percent saja.
@@ -76,7 +76,14 @@ def calculate_position_sizing(ticker, current_price, risk_per_share, settings=No
         settings = frappe.get_single("Trading Account Settings")
 
     modal_total = settings.modal_total or 0
-    risk_pct = settings.risk_per_trade_percent or 0
+    if trading_mode == "Fast":
+        # Fast Trading (implementasi 22 Sep 2026, sebelumnya field ada
+        # tapi tidak dipakai -- lihat BUG #7 lama): pakai
+        # risk_per_trade_fast_percent, fallback ke risk_per_trade_percent
+        # kalau field fast belum diisi (kosong/0).
+        risk_pct = settings.risk_per_trade_fast_percent or settings.risk_per_trade_percent or 0
+    else:
+        risk_pct = settings.risk_per_trade_percent or 0
     max_per_stock_pct = settings.max_per_stock_percent or 0
     max_exposure_pct = settings.max_exposure_percent or 0
 
