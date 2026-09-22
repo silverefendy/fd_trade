@@ -2,7 +2,7 @@
  "actions": [],
  "allow_import": 1,
  "allow_rename": 1,
- "autoname": "format:TRX-{YY}{MM}-{####}",
+ "autoname": "autoname",
  "creation": "2026-09-14 14:59:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -12,6 +12,7 @@
   "ticker",
   "setup",
   "market_regime",
+  "trading_mode",
   "entry_section",
   "entry_price",
   "stop_loss",
@@ -19,6 +20,8 @@
   "target_price",
   "target_suggestions",
   "sr_section",
+  "current_price",
+  "trend",
   "support_level",
   "resistance_level",
   "support_level_2",
@@ -35,6 +38,8 @@
   "result_r",
   "result_rp",
   "status",
+  "capital_applied",
+  "capital_applied_amount",
   "psychology_section",
   "followed_system",
   "fomo",
@@ -72,10 +77,20 @@
    "options": "Breakout\nPullback\nOther"
   },
   {
+   "description": "Otomatis dari IHSG Trend (Trading Account Settings): Bullish Kuat/Lemah -> Bull, Sideways -> Sideways, Bearish Lemah/Kuat -> Bear.",
    "fieldname": "market_regime",
    "fieldtype": "Select",
    "label": "Market Regime",
-   "options": "Bull\nSideways\nBear"
+   "options": "Bull\nSideways\nBear",
+   "read_only": 1
+  },
+  {
+   "default": "Normal",
+   "description": "Normal pakai Risk Per Trade Percent, Fast pakai Risk Per Trade Fast Percent (position sizing lebih kecil, cocok utk entry cepat).",
+   "fieldname": "trading_mode",
+   "fieldtype": "Select",
+   "label": "Trading Mode",
+   "options": "Normal\nFast"
   },
   {
    "fieldname": "entry_section",
@@ -85,38 +100,38 @@
   {
    "fieldname": "entry_price",
    "fieldtype": "Currency",
+   "hide_currency_symbol": "1",
    "label": "Entry Price",
-   "reqd": 1,
-   "hide_currency_symbol": "1"
+   "reqd": 1
   },
   {
    "fieldname": "stop_loss",
    "fieldtype": "Currency",
+   "hide_currency_symbol": "1",
    "label": "Stop Loss",
-   "reqd": 1,
-   "hide_currency_symbol": "1"
+   "reqd": 0
   },
   {
+   "default": "Moderate (2.5R)",
+   "description": "Pilih kategori target profit berbasis R-multiple. Pilih 'Custom' untuk isi Target Price manual.",
    "fieldname": "target_category",
    "fieldtype": "Select",
    "label": "Target Category",
-   "options": "Conservative (1.5R)\nModerate (2.5R)\nAggressive (4R)\nCustom",
-   "default": "Moderate (2.5R)",
-   "description": "Pilih kategori target profit berbasis R-multiple. Pilih 'Custom' untuk isi Target Price manual."
+   "options": "Conservative (1.5R)\nModerate (2.5R)\nAggressive (4R)\nResistance (Auto)\nCustom"
   },
   {
+   "description": "Otomatis terisi berdasarkan Target Category, kecuali dipilih 'Custom'.",
    "fieldname": "target_price",
    "fieldtype": "Currency",
-   "label": "Target Price",
-   "description": "Otomatis terisi berdasarkan Target Category, kecuali dipilih 'Custom'.",
-   "hide_currency_symbol": "1"
+   "hide_currency_symbol": "1",
+   "label": "Target Price"
   },
   {
+   "description": "Perhitungan otomatis 3 skenario target berdasarkan jarak Entry Price ke Stop Loss.",
    "fieldname": "target_suggestions",
    "fieldtype": "Small Text",
    "label": "Target Suggestions (Auto)",
-   "read_only": 1,
-   "description": "Perhitungan otomatis 3 skenario target berdasarkan jarak Entry Price ke Stop Loss."
+   "read_only": 1
   },
   {
    "fieldname": "sr_section",
@@ -124,59 +139,76 @@
    "label": "Support & Resistance (Auto)"
   },
   {
+   "description": "Disalin dari Watchlist saat ticker diisi/diganti (Trade Journal tidak fetch yfinance sendiri).",
+   "fieldname": "current_price",
+   "fieldtype": "Currency",
+   "hide_currency_symbol": "1",
+   "label": "Current Price",
+   "read_only": 1
+  },
+  {
+   "description": "Disalin otomatis dari Watchlist.trend_status saat entry & tiap refresh 30 menit (jam bursa). Bukan dihitung ulang di sini -- satu sumber kebenaran di Watchlist.",
+   "fieldname": "trend",
+   "fieldtype": "Select",
+   "label": "Trend",
+   "options": "Bullish Kuat\nBullish Lemah\nSideways\nBearish Lemah\nBearish Kuat",
+   "read_only": 1
+  },
+  {
    "fieldname": "support_level",
    "fieldtype": "Currency",
+   "hide_currency_symbol": "1",
    "label": "Support Level",
-   "read_only": 1,
-   "hide_currency_symbol": "1"
+   "read_only": 1
   },
   {
    "fieldname": "resistance_level",
    "fieldtype": "Currency",
+   "hide_currency_symbol": "1",
    "label": "Resistance Level",
-   "read_only": 1,
-   "hide_currency_symbol": "1"
+   "read_only": 1
   },
   {
+   "description": "Level support kedua (lebih jauh dari harga sekarang dibanding Support Level).",
    "fieldname": "support_level_2",
    "fieldtype": "Currency",
+   "hide_currency_symbol": "1",
    "label": "Support Level 2",
-   "read_only": 1,
-   "description": "Level support kedua (lebih jauh dari harga sekarang dibanding Support Level).",
-   "hide_currency_symbol": "1"
+   "read_only": 1
   },
   {
+   "description": "Level resistance kedua (lebih jauh dari harga sekarang dibanding Resistance Level).",
    "fieldname": "resistance_level_2",
    "fieldtype": "Currency",
+   "hide_currency_symbol": "1",
    "label": "Resistance Level 2",
-   "read_only": 1,
-   "description": "Level resistance kedua (lebih jauh dari harga sekarang dibanding Resistance Level).",
-   "hide_currency_symbol": "1"
+   "read_only": 1
   },
   {
+   "description": "Level support ketiga (paling jauh dari harga sekarang dibanding Support Level 2).",
    "fieldname": "support_level_3",
    "fieldtype": "Currency",
+   "hide_currency_symbol": "1",
    "label": "Support Level 3",
-   "read_only": 1,
-   "description": "Level support ketiga (paling jauh dari harga sekarang dibanding Support Level 2).",
-   "hide_currency_symbol": "1"
+   "read_only": 1
   },
   {
+   "description": "Level resistance ketiga (paling jauh dari harga sekarang dibanding Resistance Level 2).",
    "fieldname": "resistance_level_3",
    "fieldtype": "Currency",
+   "hide_currency_symbol": "1",
    "label": "Resistance Level 3",
-   "read_only": 1,
-   "description": "Level resistance ketiga (paling jauh dari harga sekarang dibanding Resistance Level 2).",
-   "hide_currency_symbol": "1"
+   "read_only": 1
   },
   {
+   "description": "Kombinasi Swing High/Low (6 bulan) + Moving Average (MA20/50/200). Klik tombol 'Fetch Support/Resistance' untuk update.",
    "fieldname": "sr_details",
    "fieldtype": "Small Text",
    "label": "S/R Details (Auto)",
-   "read_only": 1,
-   "description": "Kombinasi Swing High/Low (6 bulan) + Moving Average (MA20/50/200). Klik tombol 'Fetch Support/Resistance' untuk update."
+   "read_only": 1
   },
   {
+   "allow_in_quick_entry": 1,
    "fieldname": "position_lot",
    "fieldtype": "Int",
    "label": "Position Lot"
@@ -190,16 +222,16 @@
   {
    "fieldname": "risk_amount",
    "fieldtype": "Currency",
+   "hide_currency_symbol": "1",
    "label": "Risk Amount",
-   "read_only": 1,
-   "hide_currency_symbol": "1"
+   "read_only": 1
   },
   {
+   "default": "1.0",
    "fieldname": "risk_r",
    "fieldtype": "Float",
    "label": "Risk R",
-   "read_only": 1,
-   "default": "1.0"
+   "read_only": 1
   },
   {
    "fieldname": "exit_section",
@@ -209,8 +241,8 @@
   {
    "fieldname": "exit_price",
    "fieldtype": "Currency",
-   "label": "Exit Price",
-   "hide_currency_symbol": "1"
+   "hide_currency_symbol": "1",
+   "label": "Exit Price"
   },
   {
    "fieldname": "result_r",
@@ -220,16 +252,35 @@
   {
    "fieldname": "result_rp",
    "fieldtype": "Currency",
+   "hide_currency_symbol": "1",
    "label": "Result Rp",
-   "read_only": 1,
-   "hide_currency_symbol": "1"
+   "read_only": 1
   },
   {
+   "default": "Open",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Open\nClosed",
-   "default": "Open"
+   "options": "Open\nClosed"
+  },
+  {
+   "default": "0",
+   "description": "Internal guard -- JANGAN diedit manual. Menandai apakah result_rp trade ini sudah ditambahkan ke modal_total.",
+   "fieldname": "capital_applied",
+   "fieldtype": "Check",
+   "hidden": "1",
+   "label": "Capital Applied (Internal)",
+   "read_only": "1"
+  },
+  {
+   "default": "0",
+   "description": "Internal -- JANGAN diedit manual. Simpan persis nilai result_rp yang sudah ditambahkan ke modal_total, dipakai utk reversal akurat kalau status Closed dibatalkan.",
+   "fieldname": "capital_applied_amount",
+   "fieldtype": "Currency",
+   "hidden": "1",
+   "hide_currency_symbol": "1",
+   "label": "Capital Applied Amount (Internal)",
+   "read_only": "1"
   },
   {
    "fieldname": "psychology_section",

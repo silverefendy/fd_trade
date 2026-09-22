@@ -5,6 +5,7 @@ dan perhitungan target price otomatis berbasis R-multiple.
 """
 
 import frappe
+from fd_trade.utils.price_data import calculate_atr
 from frappe.model.document import Document
 from frappe import _
 
@@ -21,17 +22,138 @@ TARGET_CATEGORIES = {
 class TradeJournal(Document):
     """Trade Journal entry with risk management and psychology tracking."""
 
+    def autoname(self):
+        """Custom naming (22 Sep 2026): format tampil TRX-YYMMDD-#### (pakai
+        tanggal Entry, field `date` -- BUKAN tanggal hari ini/creation), tapi
+        counter RESET PER BULAN (bukan per hari), supaya nomor urut tetap
+        berguna untuk menghitung 'berapa transaksi bulan ini'.
+
+        Dicapai dgn pisah antara:
+        - series_key: TRX-YYMM (mis. TRX-2609) -> ini yg dipakai getseries()
+          utk nomor urut, jadi counter reset tiap awal bulan baru
+        - nama tampil akhir: TRX-YYMMDD-#### (tanggal lengkap dari field date,
+          tapi nomor urut tetap ambil dari counter bulanan di atas)
+
+        WAJIB self.date sudah terisi (field ini reqd=1 di schema, jadi
+        seharusnya selalu ada saat autoname dipanggil)."""
+        from frappe.model.naming import getseries
+        from frappe.utils import getdate
+
+        if not self.date:
+            frappe.throw(_("Tanggal (Date) wajib diisi sebelum trade bisa disimpan."))
+
+        d = getdate(self.date)
+        yymm = d.strftime("%y%m")
+        yymmdd = d.strftime("%y%m%d")
+
+        series_key = f"TRX-{yymm}-"
+        counter = getseries(series_key, 4)  # 4 digit, reset tiap key (bulan) baru
+
+        self.name = f"TRX-{yymmdd}-{counter}"
+
     def validate(self):
         """Validate trade entry and calculate risk metrics."""
         if self.ticker:
             self.ticker = self.ticker.strip().upper()
-        self.calculate_risk_metrics()
+        self._auto_fill_market_regime()
 
-        if self.is_new() or self.has_value_changed("ticker"):
+        # Urutan penting (22 Sep 2026): watchlist dulu -> S/R -> stop loss
+        # auto -> baru risk metrics, karena tiap tahap butuh data dari
+        # tahap sebelumnya (target TP "Resistance (Auto)" butuh S/R,
+        # risk metrics butuh stop_loss).
+        self._auto_create_watchlist_if_missing()
+
+        # FIX (22 Sep 2026): sebelumnya cuma trigger saat ticker baru/berubah,
+        # jadi current_price selamanya kosong untuk record LAMA yang dibuat
+        # sebelum field ini ada. Tambah kondisi "current_price masih kosong"
+        # supaya record lama ikut terisi di save berikutnya.
+        if self.is_new() or self.has_value_changed("ticker") or not self.current_price:
             self._auto_fetch_support_resistance()
+
+        if self.is_new() and not self.stop_loss:
+            self._auto_calculate_stop_loss()
+
+        self.calculate_risk_metrics()
 
         if self.is_new():
             self.check_risk_management_rules()
+
+    def _auto_fill_market_regime(self):
+        """Isi Market Regime otomatis dari IHSG Trend (Trading Account
+        Settings), BUKAN manual pilih -- keputusan trader tetap manual
+        (entry/exit/stop loss), tapi data konteks pasar ini otomatis.
+        Dipetakan 5 kategori IHSG -> 3 kategori Trade Journal (22 Sep 2026)."""
+        settings = frappe.get_single("Trading Account Settings")
+        ihsg_trend = settings.ihsg_trend
+        mapping = {
+            "Bullish Kuat": "Bull",
+            "Bullish Lemah": "Bull",
+            "Sideways": "Sideways",
+            "Bearish Lemah": "Bear",
+            "Bearish Kuat": "Bear",
+        }
+        if ihsg_trend in mapping:
+            self.market_regime = mapping[ihsg_trend]
+
+    def _auto_create_watchlist_if_missing(self):
+        """Kalau ticker belum ada di Watchlist, buat otomatis (tier default
+        'C' -- ticker ini masuk lewat entry langsung, bukan lewat proses
+        screening manual biasa, jadi jujur beri tier terendah). Fail-silent:
+        kalau gagal, trade tetap lanjut disimpan, S/R & stop loss auto akan
+        kosong sampai Watchlist-nya ada (ditangani fallback masing-masing)."""
+        if not self.ticker:
+            return
+        if frappe.db.exists("Watchlist", self.ticker):
+            return
+        try:
+            wl = frappe.get_doc({
+                "doctype": "Watchlist",
+                "ticker": self.ticker,
+                "tier": "C",
+            })
+            wl.insert(ignore_permissions=True)
+            frappe.msgprint(
+                _("Ticker {0} belum ada di Watchlist, entry baru dibuat otomatis (Tier C).").format(self.ticker),
+                indicator="blue"
+            )
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), f"Auto-create Watchlist gagal untuk {self.ticker}")
+
+    def _auto_calculate_stop_loss(self):
+        """Hitung Stop Loss otomatis, prioritas (disepakati 21 Sep 2026):
+        1. Watchlist Signal terbaru dgn rekomendasi Buy utk ticker ini
+        2. Hitung ulang ATR14 x 1.5 langsung dari Price History (reuse
+           calculate_atr(), konsisten dgn hasil backtest 750 hari)
+        3. Fallback Support Level 2 (struktural) kalau ATR gagal dihitung
+        Kalau semua gagal (ticker baru, data historis <14 hari), stop_loss
+        dibiarkan kosong -- trade tetap tersimpan (lihat guard di
+        calculate_risk_metrics), user isi manual & Save ulang nanti."""
+        if not self.entry_price:
+            return
+
+        latest_signal = frappe.get_all(
+            "Watchlist Signal",
+            filters={"ticker": self.ticker, "recommendation": "Buy"},
+            fields=["stop_loss"],
+            order_by="creation desc",
+            limit=1
+        )
+        if latest_signal and latest_signal[0].stop_loss:
+            self.stop_loss = latest_signal[0].stop_loss
+            return
+
+        try:
+            from fd_trade.utils.volume_profile import get_price_history_rows
+            rows = get_price_history_rows(self.ticker, lookback_days=250)
+            atr14 = calculate_atr(rows) if rows else None
+            if atr14:
+                self.stop_loss = self.entry_price - (atr14 * 1.5)
+                return
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), f"Auto SL (ATR) gagal untuk {self.ticker}")
+
+        if self.support_level_2:
+            self.stop_loss = self.support_level_2
 
     def _auto_fetch_support_resistance(self):
         """Ambil Support/Resistance otomatis dari yfinance saat ticker baru
@@ -39,6 +161,20 @@ class TradeJournal(Document):
         kalau yfinance gagal/timeout)."""
         if not self.ticker:
             return
+
+        # Current Price: disalin dari Watchlist (BUKAN fetch yfinance sendiri
+        # di Trade Journal -- keputusan arsitektur 22 Sep 2026). Kalau ticker
+        # belum ada di Watchlist, current_price tetap kosong.
+        watchlist_price = frappe.db.get_value("Watchlist", self.ticker, "current_price")
+        if watchlist_price:
+            self.current_price = watchlist_price
+
+        # Trend (22 Sep 2026): salin apa adanya dari Watchlist, JANGAN hitung
+        # ulang di sini -- Watchlist sudah jadi satu-satunya sumber kebenaran
+        # utk klasifikasi MA20 vs MA50 (lihat trend_status di watchlist.py).
+        watchlist_trend = frappe.db.get_value("Watchlist", self.ticker, "trend_status")
+        if watchlist_trend:
+            self.trend = watchlist_trend
 
         from fd_trade.utils.price_data import get_support_resistance
 
@@ -60,6 +196,18 @@ class TradeJournal(Document):
         max_exposure_percent, bukan cuma risk_per_trade_percent saja."""
         from fd_trade.utils.risk_engine import calculate_position_sizing
 
+        # Kalau stop_loss masih kosong (auto-calc gagal semua & user belum
+        # isi manual), JANGAN blokir save -- simpan trade tanpa validasi
+        # risiko dulu, tunggu data tersedia / isi manual lalu Save ulang.
+        if not self.stop_loss:
+            frappe.msgprint(
+                _("Stop Loss belum bisa dihitung otomatis untuk {0} (data S/R & ATR belum tersedia). Trade tetap disimpan TANPA validasi risiko -- isi Stop Loss manual lalu Save ulang begitu data tersedia.").format(self.ticker),
+                indicator="red"
+            )
+            self.risk_amount = None
+            self.suggested_lot = None
+            return
+
         # Calculate risk per share
         risk_per_share = self.entry_price - self.stop_loss
 
@@ -75,6 +223,7 @@ class TradeJournal(Document):
             current_price=self.entry_price,
             risk_per_share=risk_per_share,
             exclude_docname=exclude_docname,
+            trading_mode=self.trading_mode or "Normal",
         )
 
         if not sizing:
@@ -135,12 +284,32 @@ class TradeJournal(Document):
             computed[label] = price
             suggestion_lines.append(f"{label}: Rp{price:,.0f}  (jika TP tercapai = +{multiple}R)")
 
+        # Resistance (Auto): target profit dari struktur harga (S/R), BUKAN
+        # R-multiple -- titik tengah Resistance 1-2, fallback ke Resistance 1
+        # saja kalau Resistance 2 belum ada datanya. Belum diuji backtest
+        # (beda dgn ATR-stop yg sudah lewat backtest 750 hari) -- starting
+        # point yg bisa dikoreksi kalau data live menunjukkan A/B lebih baik.
+        resistance_auto_price = None
+        if self.resistance_level:
+            if self.resistance_level_2:
+                resistance_auto_price = (self.resistance_level + self.resistance_level_2) / 2
+            else:
+                resistance_auto_price = self.resistance_level
+        if resistance_auto_price:
+            suggestion_lines.append(
+                f"Resistance (Auto): Rp{resistance_auto_price:,.0f}  (titik tengah R1-R2, fallback R1 kalau R2 kosong)"
+            )
+
         self.target_suggestions = "\n".join(suggestion_lines)
 
         # Kalau kategori bukan Custom, auto-isi target_price.
         # Kalau Custom, biarkan nilai yang sudah diinput user (tidak ditimpa).
         if self.target_category and self.target_category != "Custom":
-            if self.target_category in computed:
+            if self.target_category == "Resistance (Auto)":
+                if resistance_auto_price:
+                    self.target_price = resistance_auto_price
+                # kalau None (S/R blm ada), JANGAN timpa target_price dgn None
+            elif self.target_category in computed:
                 self.target_price = computed[self.target_category]
         elif not self.target_category:
             # Default ke Moderate kalau belum dipilih sama sekali
@@ -259,6 +428,61 @@ class TradeJournal(Document):
                 and self.has_value_changed("status")):
             notify_on_close(self)
 
+        # Compounding otomatis (22 Sep 2026): sekali trade Closed & result_rp
+        # sudah terhitung, tambahkan ke modal_total Trading Account Settings.
+        # TIDAK digabung dgn kondisi has_value_changed("status") di atas --
+        # sengaja dicek independen lewat flag capital_applied sendiri, supaya
+        # tetap idempotent walau BUG #1 (dobel on_update) kambuh lagi nanti.
+        if self.status == "Closed" and self.result_rp is not None and not self.capital_applied:
+            self._auto_apply_capital_change()
+        elif self.capital_applied and self.status != "Closed" and self.has_value_changed("status"):
+            # Batal-close (22 Sep 2026): status dibalik dari Closed ke status
+            # lain SETELAH modal sempat ter-update -- kembalikan modal.
+            self._reverse_capital_change()
+
+
+    def _auto_apply_capital_change(self):
+        """Compounding otomatis: tambahkan result_rp trade ini ke modal_total
+        (BUKAN modal_awal -- modal_awal statis, cuma catatan deposit).
+        Pakai db_set (bukan .save() lagi) supaya TIDAK memicu validate()/
+        on_update() berulang -- mencegah rekursi & dobel-tambah. Fail-silent:
+        kalau gagal (mis. Trading Account Settings belum pernah disimpan),
+        log error saja -- trade tetap tersimpan, modal bisa dikoreksi manual.
+
+        CATATAN DESAIN (disepakati 22 Sep 2026): kalau exit_price diedit
+        SETELAH capital_applied=1, modal_total TIDAK ikut terkoreksi otomatis
+        (mirip settlement broker yang final). Koreksi salah input dilakukan
+        manual di Trading Account Settings."""
+        try:
+            settings = frappe.get_single("Trading Account Settings")
+            settings.modal_total = (settings.modal_total or 0) + self.result_rp
+            settings.save(ignore_permissions=True)
+            self.db_set("capital_applied", 1, update_modified=False)
+            self.db_set("capital_applied_amount", self.result_rp, update_modified=False)
+        except Exception:
+            frappe.log_error(
+                frappe.get_traceback(),
+                f"Auto-apply capital change gagal untuk {self.name}"
+            )
+
+    def _reverse_capital_change(self):
+        """Undo compounding kalau status Closed dibatalkan (balik ke Open/
+        lainnya) SETELAH modal sempat ter-update. Pakai capital_applied_amount
+        (BUKAN result_rp saat ini) -- angka yang dikembalikan PERSIS sama
+        dengan yang sempat ditambahkan, aman walau result_rp sudah berubah
+        duluan (mis. exit_price ikut diedit di save yang sama)."""
+        try:
+            settings = frappe.get_single("Trading Account Settings")
+            settings.modal_total = (settings.modal_total or 0) - (self.capital_applied_amount or 0)
+            settings.save(ignore_permissions=True)
+            self.db_set("capital_applied", 0, update_modified=False)
+            self.db_set("capital_applied_amount", 0, update_modified=False)
+        except Exception:
+            frappe.log_error(
+                frappe.get_traceback(),
+                f"Reverse capital change gagal untuk {self.name}"
+            )
+
 
 def notify_on_close(doc, method=None):
     """Send Telegram notification when a trade is closed."""
@@ -300,3 +524,27 @@ def fetch_support_resistance(docname):
     doc.save()
 
     return result
+
+
+@frappe.whitelist()
+def close_position(docname: str, exit_price: float):
+    """Tutup posisi dari tombol 'Close Position' di List View -- set
+    exit_price + status Closed, lalu .save() memicu calculate_risk_metrics()
+    (hitung result_rp/result_r) dan on_update() (notify Telegram + compounding
+    modal_total). Return result_rp untuk ditampilkan JS (frappe.show_alert).
+
+    BUG FIX (22 Sep 2026): parameter dari frappe.call() datang sebagai string
+    lewat HTTP walau JS mengirim angka murni. Type hint ": float" di signature
+    memicu Frappe's typing_validations wrapper utk auto-cast -- tapi sebagai
+    lapis pengaman kedua, tetap cast eksplisit float() di sini (defense in
+    depth, jangan cuma andalkan wrapper framework)."""
+    doc = frappe.get_doc("Trade Journal", docname)
+
+    if doc.status == "Closed":
+        frappe.throw(_("Trade {0} sudah berstatus Closed.").format(docname))
+
+    doc.exit_price = float(exit_price)
+    doc.status = "Closed"
+    doc.save()
+
+    return {"result_rp": doc.result_rp}

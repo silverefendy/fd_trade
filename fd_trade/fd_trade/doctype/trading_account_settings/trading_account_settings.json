@@ -6,6 +6,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "modal_awal",
   "modal_total",
   "risk_per_trade_percent",
   "risk_per_trade_fast_percent",
@@ -39,71 +40,79 @@
  ],
  "fields": [
   {
+   "default": "30000000",
+   "description": "Modal deposit awal -- statis, HANYA untuk catatan/laporan. TIDAK dipakai risk_engine untuk sizing. Update manual kalau ada setoran/penarikan tambahan.",
+   "fieldname": "modal_awal",
+   "fieldtype": "Currency",
+   "hide_currency_symbol": "1",
+   "label": "Modal Awal (Deposit)"
+  },
+  {
+   "default": "30000000",
    "fieldname": "modal_total",
    "fieldtype": "Currency",
-   "label": "Modal Total",
-   "default": "30000000",
-   "hide_currency_symbol": "1"
+   "hide_currency_symbol": "1",
+   "label": "Modal Total"
   },
   {
+   "default": "0.5",
    "fieldname": "risk_per_trade_percent",
    "fieldtype": "Float",
-   "label": "Risk Per Trade Percent",
-   "default": "0.5"
+   "label": "Risk Per Trade Percent"
   },
   {
+   "default": "0.25",
    "fieldname": "risk_per_trade_fast_percent",
    "fieldtype": "Float",
-   "label": "Risk Per Trade Fast Percent",
-   "default": "0.25"
+   "label": "Risk Per Trade Fast Percent"
   },
   {
+   "default": "1",
    "fieldname": "daily_loss_limit_percent",
    "fieldtype": "Float",
-   "label": "Daily Loss Limit Percent",
-   "default": "1"
+   "label": "Daily Loss Limit Percent"
   },
   {
+   "default": "3",
    "fieldname": "weekly_loss_limit_percent",
    "fieldtype": "Float",
-   "label": "Weekly Loss Limit Percent",
-   "default": "3"
+   "label": "Weekly Loss Limit Percent"
   },
   {
+   "default": "5",
    "fieldname": "monthly_circuit_breaker_percent",
    "fieldtype": "Float",
-   "label": "Monthly Circuit Breaker Percent",
-   "default": "5"
+   "label": "Monthly Circuit Breaker Percent"
   },
   {
+   "default": "60",
    "fieldname": "max_exposure_percent",
    "fieldtype": "Float",
-   "label": "Max Exposure Percent",
-   "default": "60"
+   "label": "Max Exposure Percent"
   },
   {
+   "default": "15",
    "fieldname": "max_per_stock_percent",
    "fieldtype": "Float",
-   "label": "Max Per Stock Percent",
-   "default": "15"
+   "label": "Max Per Stock Percent"
   },
   {
+   "default": "30",
    "fieldname": "max_sektor_percent",
    "fieldtype": "Float",
-   "label": "Max Sektor Percent",
-   "default": "30"
+   "label": "Max Sektor Percent"
   },
   {
+   "default": "3",
    "fieldname": "max_consecutive_losses",
    "fieldtype": "Int",
-   "label": "Max Consecutive Losses",
-   "default": "3"
+   "label": "Max Consecutive Losses"
   },
   {
+   "collapsible": 1,
    "fieldname": "ihsg_section",
    "fieldtype": "Section Break",
-   "label": "IHSG (Market Trend Setter, Auto)",
-   "collapsible": 1
+   "label": "IHSG (Market Trend Setter, Auto)"
   },
   {
    "fieldname": "ihsg_current_price",
@@ -165,36 +174,36 @@
    "read_only": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "signal_thresholds_section",
    "fieldtype": "Section Break",
-   "label": "Signal Thresholds (Advanced)",
-   "collapsible": 1
+   "label": "Signal Thresholds (Advanced)"
   },
   {
+   "default": "3.0",
+   "description": "Jarak maksimum harga dari level support/resistance agar dikategorikan mendekati level.",
    "fieldname": "proximity_threshold_pct",
    "fieldtype": "Percent",
-   "label": "Proximity Threshold (%)",
-   "default": "3.0",
-   "description": "Jarak maksimum harga dari level support/resistance agar dikategorikan mendekati level."
+   "label": "Proximity Threshold (%)"
   },
   {
+   "default": "1.5",
    "fieldname": "volume_high_ratio",
    "fieldtype": "Float",
-   "label": "Volume Tinggi Ratio",
-   "default": "1.5"
+   "label": "Volume Tinggi Ratio"
   },
   {
+   "default": "0.5",
    "fieldname": "volume_low_ratio",
    "fieldtype": "Float",
-   "label": "Volume Rendah Ratio",
-   "default": "0.5"
+   "label": "Volume Rendah Ratio"
   },
   {
+   "default": "90",
+   "description": "Jumlah hari penyimpanan histori IHSG Signal.",
    "fieldname": "ihsg_signal_retention_days",
    "fieldtype": "Int",
-   "label": "IHSG Signal Retention (Hari)",
-   "default": "90",
-   "description": "Jumlah hari penyimpanan histori IHSG Signal."
+   "label": "IHSG Signal Retention (Hari)"
   },
   {
    "fieldname": "telegram_section",
@@ -212,10 +221,10 @@
    "label": "Telegram Chat ID"
   },
   {
+   "default": "1",
    "fieldname": "telegram_notifications_enabled",
    "fieldtype": "Check",
-   "label": "Telegram Notifications Enabled",
-   "default": "1"
+   "label": "Telegram Notifications Enabled"
   }
  ],
  "index_web_pages_for_search": 1,
