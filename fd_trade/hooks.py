@@ -18,6 +18,7 @@ app_license = "MIT"
 app_include_js = [
     "/assets/fd_trade/js/price_history_chart.js",
     "/assets/fd_trade/js/ihsg_banner.js",
+    "/assets/fd_trade/js/price_status_flag.js",
 ]
 
 add_to_apps_screen = [
