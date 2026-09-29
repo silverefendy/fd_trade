@@ -12,6 +12,26 @@ frappe.listview_settings["Watchlist Signal"] = {
         // Watchlist -- fungsi shared di ihsg_banner.js.
         fd_trade_show_ihsg_banner(listview);
 
+        listview.page.add_inner_button("Fetch dari Watchlist", () => {
+            frappe.confirm(
+                "Ambil data terbaru dari semua Watchlist dan buat Watchlist Signal baru? Setiap ticker akan mendapat 1 baris signal baru.",
+                () => {
+                    frappe.call({
+                        method: "fd_trade.tasks.refresh_all_watchlist_now",
+                        freeze: true,
+                        freeze_message: "Mengambil data Watchlist dan membuat signal baru (sekitar 20-30 detik)...",
+                        callback: () => {
+                            listview.refresh();
+                            frappe.show_alert({
+                                message: "Signal berhasil dibuat dari Watchlist terbaru. Ingat: data yfinance delay 15-20 menit.",
+                                indicator: "green"
+                            });
+                        }
+                    });
+                }
+            );
+        });
+
         listview.page.add_inner_button("Lihat Chart", () => {
             const selected = listview.get_checked_items();
             if (!selected.length) return frappe.msgprint("Pilih satu signal terlebih dahulu.");
@@ -61,10 +81,20 @@ frappe.listview_settings["Watchlist Signal"] = {
         current_price: (value, df, doc) => {
             if (!value) return "";
             let color = "";
-            if (doc.recommendation_price_low && value <= doc.recommendation_price_low) {
-                color = "#2e7d32"; // harga di/bawah zona beli -> hijau
+            // Prioritas 1 (22 Sep 2026): proximity_category, konsisten dgn
+            // warna badge proximity yg sudah ada -- "mendekati support"
+            // pakai warna Support (merah), "mendekati resistance" pakai
+            // warna Resistance (hijau), sama palet dgn Watchlist.
+            if (doc.proximity_category === "mendekati support") {
+                color = "#c62828";
+            } else if (doc.proximity_category === "mendekati resistance") {
+                color = "#2e7d32";
+            } else if (doc.recommendation_price_low && value <= doc.recommendation_price_low) {
+                // Fallback (logic lama): kalau proximity_category kosong,
+                // tetap pakai zona beli/jual sebagai acuan.
+                color = "#2e7d32";
             } else if (doc.recommendation_price_high && value >= doc.recommendation_price_high) {
-                color = "#c62828"; // harga di/atas zona jual -> merah
+                color = "#c62828";
             }
             const style = color ? `color: ${color}; font-weight: 700;` : "";
             return `<span style="${style}">${fmtNum(value)}</span>`;

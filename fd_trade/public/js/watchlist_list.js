@@ -1,4 +1,5 @@
 frappe.listview_settings["Watchlist"] = {
+    add_fields: ["price_status"],
     formatters: {
         // === Harga OHLC & S/R: warna teks saja, tanpa background,
         //     supaya tidak terasa penuh warna di seluruh tabel ===
@@ -35,7 +36,10 @@ frappe.listview_settings["Watchlist"] = {
             const style = closest_color
                 ? `color: ${closest_color}; font-weight: 700;`
                 : "";
-            return `<span style="${style}">${format_number(value, null, 0)}</span>`;
+            const flag = doc.price_status === "Tanpa Data Harga"
+                ? ` <span style="background-color: #fdecea; color: #c62828; padding: 1px 5px; border-radius: 3px; font-size: 10px; white-space: nowrap;" title="Tanpa data harga (mis. disuspend BEI). Harga = terakhir yang diketahui.">Tanpa Data</span>`
+                : "";
+            return `<span style="${style}">${format_number(value, null, 0)}</span>${flag}`;
         },
         support_level: (value) => {
             if (!value) return "";

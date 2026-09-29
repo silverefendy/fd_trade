@@ -34,6 +34,54 @@ def _build_recommendation_change_message(ticker, previous_recommendation,
     return message
 
 
+def _set_price_status(watchlist_name, status):
+    """Tandai Watchlist: 'Normal' atau 'Tanpa Data Harga' (mis. saham
+    disuspend BEI / yfinance tidak mengembalikan harga). Hanya menulis ke DB
+    kalau nilainya berubah. Fail-silent; aman dipanggil sebelum migrate
+    (field belum ada -> dilewati)."""
+    import frappe
+    try:
+        if not watchlist_name or not frappe.get_meta("Watchlist").has_field("price_status"):
+            return
+        # CLEAR-DERIVED (29 Sep 2026): tanpa harga live, field turunan
+        # (proximity, level terdekat, volume hari ini) tidak bermakna dan bisa
+        # menyesatkan, jadi dikosongkan. Angka diset 0 (kolom numerik NOT NULL).
+        # Dicek tiap panggilan (bukan hanya saat status berubah) supaya ticker
+        # yang SUDAH ditandai tetap dibersihkan; ditulis hanya kalau berbeda.
+        values = {"price_status": status}
+        if status == "Tanpa Data Harga":
+            values.update({
+                "proximity_category": None,
+                "nearest_level_name": None,
+                "nearest_level_distance_pct": 0,
+                "current_volume": 0,
+            })
+        meta = frappe.get_meta("Watchlist")
+        values = {k: v for k, v in values.items() if meta.has_field(k)}
+        current = frappe.db.get_value("Watchlist", watchlist_name, list(values.keys()), as_dict=True) or {}
+        if any((current.get(k) or None) != (v or None) for k, v in values.items()):
+            frappe.db.set_value("Watchlist", watchlist_name, values, update_modified=False)
+            frappe.db.commit()
+    except Exception as e:
+        frappe.log_error(f"Gagal set price_status untuk {watchlist_name}: {e}", "FD-Trade Watchlist Signal")
+
+
+def _sync_watchlist_from_signal(watchlist_name, values):
+    """Salin field hasil hitung signal ke Watchlist supaya kedua DocType
+    konsisten (sumber tunggal = create_signal). Field yang belum ada di
+    Watchlist dilewati. Fail-silent."""
+    import frappe
+    try:
+        if not watchlist_name:
+            return
+        meta = frappe.get_meta("Watchlist")
+        data = {k: v for k, v in values.items() if meta.has_field(k)}
+        if data:
+            frappe.db.set_value("Watchlist", watchlist_name, data, update_modified=False)
+    except Exception as e:
+        frappe.log_error(f"Gagal sinkron Watchlist {watchlist_name} dari signal: {e}", "FD-Trade Watchlist Signal")
+
+
 def create_signal(watchlist_name, ticker, current_price, trend_status,
                    support_level, support_level_2, resistance_level,
                    support_level_3=None, resistance_level_2=None,
@@ -52,6 +100,13 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
     from fd_trade.utils.price_data import get_nearest_level, get_volume_confirmation
     from fd_trade.utils.price_data import PROXIMITY_THRESHOLD_PCT, VOLUME_HIGH_RATIO, VOLUME_LOW_RATIO
     from fd_trade.utils.telegram import send_telegram_notification
+
+    # GUARD (29 Sep 2026): tanpa harga (mis. saham disuspend BEI) rekomendasi
+    # tidak bermakna dan hanya menambah baris "Wait" berharga 0 ke histori.
+    if not current_price:
+        frappe.logger().info(f"create_signal skipped for {ticker}: current_price kosong")
+        _set_price_status(watchlist_name, "Tanpa Data Harga")
+        return
 
     try:
         settings = frappe.get_single("Trading Account Settings")
@@ -194,6 +249,13 @@ def create_signal(watchlist_name, ticker, current_price, trend_status,
             "suggested_position_rp": rec.get("suggested_position_rp"),
         })
         signal.insert(ignore_permissions=True)
+        _sync_watchlist_from_signal(watchlist_name, {
+            "current_volume": signal.get("current_volume"),
+            "nearest_level_name": signal.get("nearest_level_name"),
+            "nearest_level_distance_pct": signal.get("nearest_level_distance_pct"),
+            "proximity_category": signal.get("proximity_category"),
+            "price_status": "Normal",
+        })
         frappe.db.commit()
         if previous_signal:
             try:

@@ -10,6 +10,7 @@
   "ticker",
   "track_price_history",
   "current_price",
+  "price_status",
   "ohlc_section",
   "open_price",
   "high_price",
@@ -57,6 +58,16 @@
    "read_only": 1,
    "in_list_view": 1,
    "hide_currency_symbol": "1"
+  },
+  {
+   "fieldname": "price_status",
+   "fieldtype": "Select",
+   "label": "Status Harga",
+   "options": "Normal\nTanpa Data Harga",
+   "default": "Normal",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "description": "Tanpa Data Harga = yfinance tidak mengembalikan harga (mis. saham disuspend BEI atau data tidak tersedia). Kembali Normal otomatis saat harga tersedia lagi."
   },
   {
    "fieldname": "ohlc_section",
@@ -267,7 +278,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-15 13:04:23.773105",
+ "modified": "2026-09-29 03:14:06.343134",
  "modified_by": "Administrator",
  "module": "FD-Trade",
  "name": "Watchlist",
